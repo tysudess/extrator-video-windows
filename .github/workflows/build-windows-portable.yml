@@ -1,0 +1,145 @@
+name: Build Windows Portable v1.9.13 Future UI Build Fix
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias Python
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar pasta bin
+        shell: powershell
+        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
+
+      - name: Baixar yt-dlp NIGHTLY
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          & "bin/yt-dlp.exe" --version
+
+      - name: Baixar Deno
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
+          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
+          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
+          & "bin/deno.exe" --version
+
+      - name: Baixar FFmpeg e FFprobe
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+
+          # Fonte principal: GitHub Releases do BtbN.
+          # Fallback: Gyan.dev. Cada fonte recebe varias tentativas para evitar
+          # que um erro temporario (ex.: HTTP 503) derrube o build.
+          $fontes = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+
+          $baixado = $false
+          foreach ($url in $fontes) {
+            Write-Host "Tentando fonte: $url"
+
+            for ($tentativa = 1; $tentativa -le 4; $tentativa++) {
+              try {
+                if (Test-Path "ffmpeg.zip") {
+                  Remove-Item "ffmpeg.zip" -Force
+                }
+
+                Write-Host "Tentativa ${tentativa}/4"
+                Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+
+                if ((Test-Path "ffmpeg.zip") -and ((Get-Item "ffmpeg.zip").Length -gt 1000000)) {
+                  $baixado = $true
+                  Write-Host "Download concluido com sucesso."
+                  break
+                }
+
+                throw "Arquivo baixado ausente ou muito pequeno."
+              }
+              catch {
+                Write-Warning "Falha na tentativa ${tentativa}: $($_.Exception.Message)"
+                if ($tentativa -lt 4) { Start-Sleep -Seconds 8 }
+              }
+            }
+
+            if ($baixado) { break }
+          }
+
+          if (-not $baixado) {
+            throw "Nao foi possivel baixar o FFmpeg/FFprobe de nenhuma das fontes configuradas."
+          }
+
+          if (Test-Path "ffmpeg-temp") {
+            Remove-Item "ffmpeg-temp" -Recurse -Force
+          }
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
+
+          $ffmpeg = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+
+          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado no pacote baixado" }
+          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado no pacote baixado" }
+
+          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
+          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
+
+          & "bin/ffmpeg.exe" -version
+          if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe falhou no teste de versao (exit code $LASTEXITCODE)" }
+
+          & "bin/ffprobe.exe" -version
+          if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe falhou no teste de versao (exit code $LASTEXITCODE)" }
+
+          Write-Host "FFmpeg e FFprobe prontos."
+
+      - name: Verificar sintaxe
+        shell: powershell
+        run: |
+          python -m py_compile main.py range_slider.py advanced_editor.py
+
+      - name: Gerar aplicativo
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal main.py
+
+      - name: Montar portable
+        shell: powershell
+        run: |
+          Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
+          Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
+          New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
+          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
+
+      - name: Enviar portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtratorVideos-Windows-Portable-v1.9.13-DESIGN-FUTURO-BUILD-FIX
+          path: dist/ExtratorVideos/
+          if-no-files-found: error
