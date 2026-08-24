@@ -1,10 +1,14 @@
-name: Build Windows Portable v1.9.13 Future UI Build Fix
+name: Build Windows Portable v1.9.14 Novo Layout
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+      - v1.9.14-novo-layout
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -118,12 +122,12 @@ jobs:
       - name: Verificar sintaxe
         shell: powershell
         run: |
-          python -m py_compile main.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py range_slider.py advanced_editor.py
 
-      - name: Gerar aplicativo
+      - name: Gerar aplicativo com novo layout
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal main.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal novo_layout.py
 
       - name: Montar portable
         shell: powershell
@@ -137,9 +141,29 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
 
-      - name: Enviar portable
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" -Force
+
+      - name: Enviar artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ExtratorVideos-Windows-Portable-v1.9.13-DESIGN-FUTURO-BUILD-FIX
-          path: dist/ExtratorVideos/
+          name: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT
+          path: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
           if-no-files-found: error
+
+      - name: Publicar no GitHub Releases
+        if: github.ref == 'refs/heads/v1.9.14-novo-layout' || github.ref == 'refs/heads/main'
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v1.9.14-novo-layout"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f $tag $env:GITHUB_SHA
+          git push origin "refs/tags/$tag" --force
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" --title "Extrator de Vídeos Windows v1.9.14 - Novo Layout" --notes "Nova interface premium em roxo/azul. Motor, timeline, cortes, união e compressão inteligente preservados da base v1.9.13." --prerelease
+          } else {
+            gh release upload $tag "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" --clobber
+          }
