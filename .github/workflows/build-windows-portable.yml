@@ -140,12 +140,6 @@ jobs:
 
           Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" -Force
 
-      - name: Enviar artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT
-          path: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
-          if-no-files-found: error
 
       - name: Publicar ZIP no GitHub Releases
         uses: softprops/action-gh-release@v3
