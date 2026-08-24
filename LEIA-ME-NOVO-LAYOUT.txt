@@ -1,4 +1,4 @@
-EXTRATOR DE VÍDEOS - WINDOWS v1.9.14 - NOVO LAYOUT
+EXTRATOR DE VÍDEOS - WINDOWS v1.9.15 - TIMELINE PREMIUM
 
 Base preservada: Windows Portable v1.9.13 DESIGN-FUTURO-BUILD-FIX
 Alteração principal: novo tema premium roxo/azul.
@@ -7,7 +7,13 @@ Entrada do novo visual: novo_layout.py
 Para usar manualmente no GitHub:
 1. Envie todos os arquivos e pastas deste projeto para o repositório.
 2. Preserve a pasta .github/workflows.
-3. Execute o workflow "Build Windows Portable v1.9.14 Novo Layout".
+3. Execute o workflow "Build Windows Portable v1.9.15 Timeline Premium".
 4. O workflow gera o ZIP portable e publica também em GitHub Releases.
 
 As funções da base v1.9.13 foram preservadas.
+
+ALTERAÇÕES v1.9.15:
+- Botões redesenhados com estética premium/futurista.
+- Ajustes -1s, -100ms, -10ms, +10ms, +100ms e +1s integrados à timeline.
+- Removido o bloco separado de Precisão / Clipe Selecionado.
+- Publicação direta no GitHub Releases, sem upload-artifact.
