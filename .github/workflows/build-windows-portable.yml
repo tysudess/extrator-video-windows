@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.14 Novo Layout
+name: Build Windows Portable v1.9.15 Timeline Premium
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.14-novo-layout
+      - v1.9.15-timeline-premium
 
 permissions:
   contents: write
@@ -138,22 +138,22 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
 
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.15-TIMELINE-PREMIUM.zip" -Force
 
 
       - name: Publicar ZIP no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.14-novo-layout
+          tag_name: v1.9.15-timeline-premium
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.14 - Novo Layout
+          name: Extrator de Vídeos Windows v1.9.15 - Timeline Premium
           body: |
-            Extrator de Vídeos Windows Portable v1.9.14 - Novo Layout.
-            Nova interface premium em roxo/azul. Motor, timeline, cortes, união e compressão inteligente preservados da base v1.9.13.
+            Extrator de Vídeos Windows Portable v1.9.15 - Timeline Premium.
+            Botões redesenhados, controles de precisão integrados diretamente à timeline e fluxo visual alinhado ao Android. Motor, cortes, união e compressão inteligente preservados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
+            ExtratorVideos-Windows-Portable-v1.9.15-TIMELINE-PREMIUM.zip
           fail_on_unmatched_files: true
           overwrite_files: true
