@@ -150,20 +150,27 @@ jobs:
           path: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
           if-no-files-found: error
 
-      - name: Publicar no GitHub Releases
-        if: github.ref == 'refs/heads/v1.9.14-novo-layout' || github.ref == 'refs/heads/main'
+      - name: Atualizar tag da versão
         shell: powershell
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v1.9.14-novo-layout"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f $tag $env:GITHUB_SHA
-          git push origin "refs/tags/$tag" --force
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -ne 0) {
-            gh release create $tag "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" --title "Extrator de Vídeos Windows v1.9.14 - Novo Layout" --notes "Nova interface premium em roxo/azul. Motor, timeline, cortes, união e compressão inteligente preservados da base v1.9.13." --prerelease
-          } else {
-            gh release upload $tag "ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip" --clobber
-          }
+          git tag -f "v1.9.14-novo-layout" $env:GITHUB_SHA
+          git push origin "refs/tags/v1.9.14-novo-layout" --force
+
+      - name: Publicar ZIP diretamente no GitHub Releases
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v1.9.14-novo-layout
+          target_commitish: ${{ github.sha }}
+          name: Extrator de Vídeos Windows v1.9.14 - Novo Layout
+          body: |
+            Extrator de Vídeos Windows Portable v1.9.14 - Novo Layout.
+            Nova interface premium em roxo/azul. Motor, timeline, cortes, união e compressão inteligente preservados da base v1.9.13.
+          prerelease: false
+          make_latest: true
+          files: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
+          fail_on_unmatched_files: true
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
