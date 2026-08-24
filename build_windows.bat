@@ -19,10 +19,10 @@ if not exist bin\ffmpeg.exe goto :faltou
 if not exist bin\ffprobe.exe goto :faltou
 if not exist bin\deno.exe goto :faltou
 
-py -3.12 -m py_compile main.py range_slider.py advanced_editor.py
+py -3.12 -m py_compile main.py novo_layout.py range_slider.py advanced_editor.py
 if errorlevel 1 goto :erro
 
-py -3.12 -m PyInstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal main.py
+py -3.12 -m PyInstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal novo_layout.py
 if errorlevel 1 goto :erro
 
 xcopy /E /I /Y bin dist\ExtratorVideos\bin >nul
