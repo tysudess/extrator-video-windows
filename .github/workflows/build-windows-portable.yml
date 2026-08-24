@@ -55,9 +55,6 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
 
-          # Fonte principal: GitHub Releases do BtbN.
-          # Fallback: Gyan.dev. Cada fonte recebe varias tentativas para evitar
-          # que um erro temporario (ex.: HTTP 503) derrube o build.
           $fontes = @(
             "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
             "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
@@ -117,8 +114,6 @@ jobs:
           & "bin/ffprobe.exe" -version
           if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe falhou no teste de versao (exit code $LASTEXITCODE)" }
 
-          Write-Host "FFmpeg e FFprobe prontos."
-
       - name: Verificar sintaxe
         shell: powershell
         run: |
@@ -135,6 +130,7 @@ jobs:
           Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
           Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
           New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
+
           if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
@@ -150,27 +146,19 @@ jobs:
           path: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
           if-no-files-found: error
 
-      - name: Atualizar tag da versão
-        shell: powershell
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f "v1.9.14-novo-layout" $env:GITHUB_SHA
-          git push origin "refs/tags/v1.9.14-novo-layout" --force
-
-      - name: Publicar ZIP diretamente no GitHub Releases
+      - name: Publicar ZIP no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: v1.9.14-novo-layout
           target_commitish: ${{ github.sha }}
           name: Extrator de Vídeos Windows v1.9.14 - Novo Layout
           body: |
             Extrator de Vídeos Windows Portable v1.9.14 - Novo Layout.
-            Nova interface premium em roxo/azul. Motor, timeline, cortes, união e compressão inteligente preservados da base v1.9.13.
+            Nova interface preservando motor, timeline, cortes, união e compressão inteligente da base anterior.
           prerelease: false
           make_latest: true
-          files: ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
+          files: |
+            ExtratorVideos-Windows-Portable-v1.9.14-NOVO-LAYOUT.zip
           fail_on_unmatched_files: true
           overwrite_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
