@@ -1,0 +1,115 @@
+name: Build Ubuntu Portable v1.9.13 Future UI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "port_ubuntu.py"
+      - ".github/workflows/build-ubuntu-portable.yml"
+      - "main.py"
+      - "advanced_editor.py"
+      - "range_slider.py"
+      - "requirements.txt"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Gerar fonte Ubuntu a partir da v1.9.13 Windows
+        run: python port_ubuntu.py
+
+      - name: Instalar dependências do build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl unzip xz-utils libgl1 libegl1 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxcb-xkb1 libpulse0 libnss3
+          python -m pip install --upgrade pip
+          pip install -r ubuntu_src/requirements.txt
+          mkdir -p ubuntu_src/bin
+
+      - name: Baixar yt-dlp Linux
+        run: |
+          set -e
+          curl -L --fail --retry 4 "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux.zip" -o ytdlp-linux.zip
+          mkdir -p ubuntu_src/bin/yt-dlp-unpacked
+          unzip -o ytdlp-linux.zip -d ubuntu_src/bin/yt-dlp-unpacked
+          REAL="$(find ubuntu_src/bin/yt-dlp-unpacked -type f \( -name yt-dlp -o -name yt-dlp_linux \) | head -n1)"
+          test -n "$REAL" && chmod +x "$REAL"
+          cat > ubuntu_src/bin/yt-dlp <<'EOF'
+          #!/usr/bin/env bash
+          DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          REAL="$(find "$DIR/yt-dlp-unpacked" -type f \( -name yt-dlp -o -name yt-dlp_linux \) | head -n1)"
+          [ -n "$REAL" ] || { echo "yt-dlp interno não encontrado" >&2; exit 127; }
+          exec "$REAL" "$@"
+          EOF
+          chmod +x ubuntu_src/bin/yt-dlp
+          timeout 60s ubuntu_src/bin/yt-dlp --ignore-config --compat-options no-certifi --version
+
+      - name: Baixar Deno Linux
+        run: |
+          curl -L --fail --retry 4 "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip" -o deno.zip
+          rm -rf deno-temp && mkdir deno-temp
+          unzip -o deno.zip -d deno-temp
+          cp deno-temp/deno ubuntu_src/bin/deno
+          chmod +x ubuntu_src/bin/deno
+          ubuntu_src/bin/deno --version
+
+      - name: Baixar FFmpeg e FFprobe
+        run: |
+          set -e
+          curl -L --fail --retry 4 "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz" -o ffmpeg.tar.xz
+          rm -rf ffmpeg-temp && mkdir ffmpeg-temp
+          tar -xJf ffmpeg.tar.xz -C ffmpeg-temp
+          FFMPEG="$(find ffmpeg-temp -type f -path '*/bin/ffmpeg' | head -n1)"
+          FFPROBE="$(find ffmpeg-temp -type f -path '*/bin/ffprobe' | head -n1)"
+          test -n "$FFMPEG" && test -n "$FFPROBE"
+          cp "$FFMPEG" ubuntu_src/bin/ffmpeg
+          cp "$FFPROBE" ubuntu_src/bin/ffprobe
+          chmod +x ubuntu_src/bin/ffmpeg ubuntu_src/bin/ffprobe
+          ubuntu_src/bin/ffmpeg -version | head -n1
+          ubuntu_src/bin/ffprobe -version | head -n1
+          ubuntu_src/bin/ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264
+          ubuntu_src/bin/ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx265
+
+      - name: Validar fonte Ubuntu
+        working-directory: ubuntu_src
+        run: python -m py_compile main.py range_slider.py advanced_editor.py
+
+      - name: Gerar aplicativo Linux
+        working-directory: ubuntu_src
+        run: pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal main.py
+
+      - name: Montar portable
+        working-directory: ubuntu_src
+        run: |
+          cp -r bin dist/ExtratorVideos/bin
+          cp config-proxy.json dist/ExtratorVideos/config-proxy.json
+          cp LEIA-ME.txt dist/ExtratorVideos/LEIA-ME.txt
+          cp Executar-ExtratorVideos.sh dist/ExtratorVideos/Executar-ExtratorVideos.sh
+          mkdir -p dist/ExtratorVideos/Videos
+          chmod +x dist/ExtratorVideos/ExtratorVideos dist/ExtratorVideos/Executar-ExtratorVideos.sh
+          chmod +x dist/ExtratorVideos/bin/yt-dlp dist/ExtratorVideos/bin/ffmpeg dist/ExtratorVideos/bin/ffprobe dist/ExtratorVideos/bin/deno
+          find dist/ExtratorVideos/bin/yt-dlp-unpacked -type f \( -name yt-dlp -o -name yt-dlp_linux \) -exec chmod +x {} \; || true
+          test -f dist/ExtratorVideos/ExtratorVideos
+          test -f dist/ExtratorVideos/bin/ffprobe
+          tar -C dist -czf ../ExtratorVideos-Ubuntu-Portable-v1.9.13-DESIGN-FUTURO.tar.gz ExtratorVideos
+
+      - name: Empacotar projeto fonte Ubuntu
+        run: zip -r ExtratorVideos-Ubuntu-v1.9.13-PROJETO.zip ubuntu_src -x 'ubuntu_src/build/*' 'ubuntu_src/dist/*' 'ubuntu_src/__pycache__/*'
+
+      - name: Publicar artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtratorVideos-Ubuntu-v1.9.13-DESIGN-FUTURO
+          path: |
+            ExtratorVideos-Ubuntu-Portable-v1.9.13-DESIGN-FUTURO.tar.gz
+            ExtratorVideos-Ubuntu-v1.9.13-PROJETO.zip
+          if-no-files-found: error
