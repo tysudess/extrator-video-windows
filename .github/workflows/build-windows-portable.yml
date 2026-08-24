@@ -114,6 +114,8 @@ jobs:
           & "bin/ffprobe.exe" -version
           if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe falhou no teste de versao (exit code $LASTEXITCODE)" }
 
+          Write-Host "FFmpeg e FFprobe prontos."
+
       - name: Verificar sintaxe
         shell: powershell
         run: |
@@ -130,7 +132,6 @@ jobs:
           Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
           Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
           New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
-
           if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
@@ -155,7 +156,7 @@ jobs:
           name: Extrator de Vídeos Windows v1.9.14 - Novo Layout
           body: |
             Extrator de Vídeos Windows Portable v1.9.14 - Novo Layout.
-            Nova interface preservando motor, timeline, cortes, união e compressão inteligente da base anterior.
+            Nova interface premium em roxo/azul. Motor, timeline, cortes, união e compressão inteligente preservados da base v1.9.13.
           prerelease: false
           make_latest: true
           files: |
