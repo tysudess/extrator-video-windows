@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.19 Timeline Reorder Delete
+name: Build Windows Portable v1.9.20 Live Inicio Ate Agora
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.19-timeline-reorder-delete
+      - v1.9.20-live-inicio-ate-agora
 
 permissions:
   contents: write
@@ -113,24 +113,24 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.19-TIMELINE-REORDER-DELETE.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.20-LIVE-INICIO-ATE-AGORA.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.19-timeline-reorder-delete
+          tag_name: v1.9.20-live-inicio-ate-agora
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.19 - Timeline Reorder + Delete
+          name: Extrator de Vídeos Windows v1.9.20 - Live do Inicio Ate Agora
           body: |
-            Extrator de Vídeos Windows Portable v1.9.19 - Timeline Reorder + Delete.
-            Tela principal refinada para ficar muito mais fiel à referência aprovada: menu lateral completo, análise do link, cards de informações/qualidade/resumo, painel visual direito e novo ícone.
-            Timeline agora permite reordenar clipes arrastando o cabeçalho diretamente. A tecla Delete remove o clipe/trecho selecionado.
-            O item Unir Vídeos foi removido do menu lateral porque a união já é feita dentro do Editor.
-            Proxy, cortes precisos, união interna, H.264/H.265 e compressão inteligente preservados.
+            Extrator de Vídeos Windows Portable v1.9.20 - Live do Início até Agora.
+            Mantém toda a v1.9.19 aprovada: layout refinado, timeline reordenável, Delete no teclado, cortes, união interna, proxy e compressão inteligente.
+            Nova função para YouTube ao vivo: ao analisar uma live, o app detecta AO VIVO e oferece BAIXAR DO INÍCIO ATÉ AGORA.
+            O ponto final é atualizado e congelado no instante em que o download começa. A transmissão pode continuar no YouTube, mas o arquivo tenta terminar naquele ponto.
+            Usa yt-dlp NIGHTLY + --live-from-start + recorte temporal. Como o suporte upstream é experimental, há tentativa principal e modo MP4 compatível; o app não troca silenciosamente para 'a partir de agora'.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.19-TIMELINE-REORDER-DELETE.zip
+            ExtratorVideos-Windows-Portable-v1.9.20-LIVE-INICIO-ATE-AGORA.zip
           fail_on_unmatched_files: true
           overwrite_files: true
