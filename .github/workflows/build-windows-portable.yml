@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.20 Live Inicio Ate Agora
+name: Build Windows Portable v1.9.20.1 Live Format Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.20-live-inicio-ate-agora
+      - v1.9.20.1-live-format-fix
 
 permissions:
   contents: write
@@ -113,17 +113,17 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.20-LIVE-INICIO-ATE-AGORA.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.20.1-LIVE-FORMAT-FIX.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.20-live-inicio-ate-agora
+          tag_name: v1.9.20.1-live-format-fix
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.20 - Live do Inicio Ate Agora
+          name: Extrator de Vídeos Windows v1.9.20.1 - Live Format Fix
           body: |
-            Extrator de Vídeos Windows Portable v1.9.20 - Live do Início até Agora.
+            Extrator de Vídeos Windows Portable v1.9.20.1 - Live Format Fix.
             Mantém toda a v1.9.19 aprovada: layout refinado, timeline reordenável, Delete no teclado, cortes, união interna, proxy e compressão inteligente.
             Nova função para YouTube ao vivo: ao analisar uma live, o app detecta AO VIVO e oferece BAIXAR DO INÍCIO ATÉ AGORA.
             O ponto final é atualizado e congelado no instante em que o download começa. A transmissão pode continuar no YouTube, mas o arquivo tenta terminar naquele ponto.
@@ -131,6 +131,6 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.20-LIVE-INICIO-ATE-AGORA.zip
+            ExtratorVideos-Windows-Portable-v1.9.20.1-LIVE-FORMAT-FIX.zip
           fail_on_unmatched_files: true
           overwrite_files: true
