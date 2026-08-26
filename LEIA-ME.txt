@@ -80,3 +80,11 @@ ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
 - Corrige falha na inicialização da interface refinada: connection_badge agora é criado antes da carga da configuração de proxy.
 - Adicionada proteção defensiva no motor para não encerrar o programa caso um layout futuro não possua o selo visual de conexão.
 - Todo o layout e as funções da Etapa 2 foram preservados.
+
+
+=== v1.9.19 — TIMELINE REORDER + DELETE ===
+- Arraste o cabeçalho de qualquer clipe na timeline para mudar sua ordem.
+- Tecla Delete remove o clipe/trecho selecionado (não dispara enquanto edita campos de texto).
+- Botões Esquerda/Direita continuam disponíveis como alternativa.
+- Item Unir Vídeos removido do menu lateral; a união continua dentro do Editor/Timeline.
+- Todo o visual e recursos da v1.9.18.1 foram preservados.

@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QRectF, QThread, QTimer, QUrl, Signal, QSize
-from PySide6.QtGui import QPainter, QPen, QPixmap, QFontMetrics
+from PySide6.QtGui import QPainter, QPen, QPixmap, QFontMetrics, QShortcut, QKeySequence
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
@@ -301,6 +301,7 @@ class ThumbnailWorker(QThread):
 class TimelineWidget(QWidget):
     clipSelected = Signal(int)
     playheadMoved = Signal(int, bool)
+    reorderRequested = Signal(int, int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -315,6 +316,12 @@ class TimelineWidget(QWidget):
         self.min_clip_w = 100
         self.thumb_cache = {}
         self.dragging_playhead = False
+        self.drag_candidate_index = -1
+        self.drag_reordering = False
+        self.drag_press_x = 0.0
+        self.drag_header_only = False
+        self.setToolTip('Clique para posicionar o cursor. Arraste o cabeçalho do clipe para mudar a ordem.')
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumHeight(146)
         self.setMouseTracking(True)
         self._update_width()
@@ -466,7 +473,10 @@ class TimelineWidget(QWidget):
             title = Path(clip.get('path', '')).name
             title = metrics.elidedText(f'{idx + 1}. {title}', Qt.TextElideMode.ElideRight, max(20, int(rect.width() - 14)))
             painter.setPen(pal.text().color())
-            painter.drawText(label_rect.adjusted(7, 0, -7, 0), Qt.AlignmentFlag.AlignVCenter, title)
+            painter.drawText(label_rect.adjusted(7, 0, -30, 0), Qt.AlignmentFlag.AlignVCenter, title)
+            # Alça visual para reordenar diretamente na timeline.
+            painter.setPen(pal.midlight().color())
+            painter.drawText(label_rect.adjusted(rect.width() - 28, 0, -6, 0), Qt.AlignmentFlag.AlignCenter, '≡')
 
             pen = QPen(pal.highlight().color() if idx == self.selected_index else pal.mid().color(), 3 if idx == self.selected_index else 1)
             painter.setPen(pen)
@@ -489,25 +499,64 @@ class TimelineWidget(QWidget):
     def mousePressEvent(self, event):
         if not self.clips or event.button() != Qt.MouseButton.LeftButton:
             return
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
         x = event.position().x()
+        y = event.position().y()
         playhead_x = self._x_for_global(self.playhead_ms)
         self.dragging_playhead = abs(x - playhead_x) <= 12
         idx = self._clip_index_for_x(x)
         if idx >= 0 and idx != self.selected_index:
             self.selected_index = idx
             self.clipSelected.emit(idx)
-        self._move_playhead_from_x(x, False)
+
+        # Arrastar pelo cabeçalho do clipe muda a ordem. Na área das miniaturas,
+        # o arrasto continua movendo o cursor normalmente.
+        self.drag_candidate_index = idx
+        self.drag_press_x = x
+        self.drag_header_only = self.clip_top <= y <= self.clip_top + 26
+        self.drag_reordering = False
+        if self.drag_header_only:
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+        else:
+            self._move_playhead_from_x(x, False)
         event.accept()
 
     def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.MouseButton.LeftButton:
-            self._move_playhead_from_x(event.position().x(), False)
-            event.accept()
+        if not (event.buttons() & Qt.MouseButton.LeftButton):
+            return
+        x = event.position().x()
+        if self.drag_header_only and self.drag_candidate_index >= 0:
+            if not self.drag_reordering and abs(x - self.drag_press_x) >= 8:
+                self.drag_reordering = True
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            if self.drag_reordering:
+                target = self._clip_index_for_x(x)
+                if target >= 0 and target != self.drag_candidate_index:
+                    source = self.drag_candidate_index
+                    self.drag_candidate_index = target
+                    self.reorderRequested.emit(source, target)
+                    self.selected_index = target
+                    self.update()
+                event.accept()
+                return
+        self._move_playhead_from_x(x, False)
+        event.accept()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.clips:
-            self._move_playhead_from_x(event.position().x(), True)
+            if not self.drag_reordering and not self.drag_header_only:
+                self._move_playhead_from_x(event.position().x(), True)
+            elif not self.drag_reordering and self.drag_header_only:
+                # Clique no cabeçalho: apenas seleciona o clipe, sem deslocar o playhead.
+                idx = self._clip_index_for_x(event.position().x())
+                if idx >= 0 and idx != self.selected_index:
+                    self.selected_index = idx
+                    self.clipSelected.emit(idx)
             self.dragging_playhead = False
+            self.drag_reordering = False
+            self.drag_header_only = False
+            self.drag_candidate_index = -1
+            self.unsetCursor()
             event.accept()
 
     def _move_playhead_from_x(self, x, finished):
@@ -845,7 +894,7 @@ class AdvancedVideoEditorWidget(QWidget):
         timeline_card = QWidget(); timeline_card.setStyleSheet(card_css)
         tl = QVBoxLayout(timeline_card); tl.setContentsMargins(12, 12, 12, 12); tl.setSpacing(8)
         timeline_head = QHBoxLayout(); timeline_head.setSpacing(8)
-        label_tl = QLabel('TIMELINE')
+        label_tl = QLabel('TIMELINE  •  arraste o cabeçalho do clipe para reordenar')
         label_tl.setStyleSheet('color:#ffffff; font-weight:800; letter-spacing:1px; background:transparent; border:none;')
         self.clip_count = QLabel('0 clipes • 00:00')
         self.clip_count.setStyleSheet('color:#96a6c4; background:transparent; border:none;')
@@ -945,6 +994,7 @@ class AdvancedVideoEditorWidget(QWidget):
         self.btn_zoom_in.clicked.connect(lambda: self.change_zoom(1))
         self.timeline.clipSelected.connect(lambda i: self.select_clip(i, False))
         self.timeline.playheadMoved.connect(self._timeline_seek)
+        self.timeline.reorderRequested.connect(self.reorder_from_timeline)
         self.range.positionChanged.connect(self._local_seek)
         self.range.positionReleased.connect(lambda pos: self._local_seek(pos))
         self.range.handleMoved.connect(self._range_handle_moved)
@@ -961,6 +1011,36 @@ class AdvancedVideoEditorWidget(QWidget):
         self.target_slider.valueChanged.connect(self._target_slider_changed)
         self.btn_export.clicked.connect(self.export_timeline)
         self.btn_folder.clicked.connect(self.open_folder)
+
+        # Atalho do editor: Delete remove o clipe/trecho selecionado.
+        # WidgetWithChildrenShortcut mantém o atalho ativo mesmo quando o foco está
+        # nos controles do editor; campos de texto são protegidos no handler.
+        self.delete_shortcut = QShortcut(QKeySequence('Delete'), self)
+        self.delete_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.delete_shortcut.activated.connect(self._delete_selected_shortcut)
+
+    def _delete_selected_shortcut(self):
+        focus = QApplication.focusWidget()
+        if isinstance(focus, (QLineEdit, QComboBox, QSlider)):
+            return
+        if 0 <= self.selected_index < len(self.clips):
+            self.remove_selected()
+            self.status.setText('Trecho selecionado removido com a tecla Delete.')
+
+    def reorder_from_timeline(self, source, target):
+        source, target = int(source), int(target)
+        if source == target or not (0 <= source < len(self.clips)) or not (0 <= target < len(self.clips)):
+            return
+        keep_playing = self.sequence_playing
+        self.pause_sequence()
+        clip = self.clips.pop(source)
+        self.clips.insert(target, clip)
+        self.selected_index = target
+        self.global_playhead_ms = self.clip_global_start(target)
+        self._refresh_timeline(True)
+        self.load_selected_clip(False)
+        self.seek_sequence(self.global_playhead_ms, keep_playing)
+        self.status.setText(f'Ordem alterada: clipe movido para a posição {target + 1}.')
 
     def _reset_visual_selection(self):
         self.pause_sequence()

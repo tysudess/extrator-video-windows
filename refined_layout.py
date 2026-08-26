@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-core.APP_VERSION = 'Windows Portable v1.9.18.1 — Refino Visual Etapa 2 — Build Fix'
+core.APP_VERSION = 'Windows Portable v1.9.19 — Timeline Reorder + Delete'
 
 # A referência visual usa seis níveis explícitos. O motor passa a suportá-los de verdade.
 core.QUALIDADES = (
@@ -273,7 +273,7 @@ def build_refined_ui(self):
     self.ref_nav_group = QButtonGroup(self); self.ref_nav_group.setExclusive(True)
     nav_specs = [
         ('home','⌂   Início'), ('download','↓   Download'), ('editor','✂   Editor'),
-        ('merge','⧉   Unir Vídeos'), ('history','◷   Histórico'), ('settings','⚙   Configurações'),
+        ('history','◷   Histórico'), ('settings','⚙   Configurações'),
     ]
     self.ref_nav = {}
     for key, text in nav_specs:
@@ -289,7 +289,7 @@ def build_refined_ui(self):
     btn_theme = QPushButton('☾'); btn_theme.setObjectName('RefinedSmallButton'); btn_theme.setToolTip('Tema escuro')
     mini.addWidget(btn_sidebar_folder); mini.addWidget(btn_help); mini.addWidget(btn_theme)
     sb.addLayout(mini)
-    ver = QLabel('v1.9.18.1  •  ETAPA 2'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    ver = QLabel('v1.9.19  •  TIMELINE'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
     sb.addWidget(ver)
     root_layout.addWidget(sidebar)
 
@@ -306,7 +306,7 @@ def build_refined_ui(self):
     dt = QLabel('NOVO DESIGN'); dt.setObjectName('RefinedAccentTitle'); dt.setAlignment(Qt.AlignmentFlag.AlignCenter)
     ds = QLabel('Moderno, intuitivo e acessível'); ds.setObjectName('RefinedMainSub'); ds.setAlignment(Qt.AlignmentFlag.AlignCenter)
     dl.addWidget(dt); dl.addWidget(ds); dl.addSpacing(6)
-    for icon, text in [('◫','Interface moderna e limpa'),('▦','Navegação intuitiva'),('◔','Modo claro e escuro'),('⌁','Acessível e responsivo'),('✂','Editor de vídeo completo'),('↓','Download com qualidade'),('◎','Suporte a proxy'),('⧉','União de vídeos')]:
+    for icon, text in [('◫','Interface moderna e limpa'),('▦','Navegação intuitiva'),('◔','Modo claro e escuro'),('⌁','Acessível e responsivo'),('✂','Editor de vídeo completo'),('↓','Download com qualidade'),('◎','Suporte a proxy'),('↔','Reordenação na timeline')]:
         row = QHBoxLayout(); row.setSpacing(9)
         ic = QLabel(icon); ic.setObjectName('RefinedFeatureIcon'); ic.setFixedWidth(25)
         tx = QLabel(text); tx.setObjectName('RefinedText')
@@ -403,7 +403,7 @@ def build_refined_ui(self):
     page.addLayout(cards)
 
     feature_row = QHBoxLayout(); feature_row.setSpacing(8)
-    for args in [('↓','Download rápido','Alta velocidade'),('◎','Suporte a proxy','Conexão via proxy'),('▷','Pré-visualização','Confira antes de baixar'),('✂','Editor integrado','Corte e edite vídeos'),('⧉','Unir vídeos','Combine vários vídeos')]:
+    for args in [('↓','Download rápido','Alta velocidade'),('◎','Suporte a proxy','Conexão via proxy'),('▷','Pré-visualização','Confira antes de baixar'),('✂','Editor integrado','Corte e edite vídeos'),('↔','Timeline visual','Reordene os clipes')]:
         feature_row.addWidget(_feature(*args))
     page.addLayout(feature_row)
     page.addStretch(1)
@@ -448,7 +448,6 @@ def build_refined_ui(self):
     self.ref_nav['home'].clicked.connect(lambda: nav(0,'home'))
     self.ref_nav['download'].clicked.connect(lambda: nav(0,'download'))
     self.ref_nav['editor'].clicked.connect(lambda: nav(1,'editor'))
-    self.ref_nav['merge'].clicked.connect(lambda: nav(1,'merge'))
     self.ref_nav['history'].clicked.connect(lambda: nav(2,'history'))
     self.ref_nav['settings'].clicked.connect(lambda: nav(3,'settings'))
 
