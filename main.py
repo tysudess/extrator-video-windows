@@ -1711,12 +1711,15 @@ class MainWindow(QMainWindow):
 
     def _update_proxy_status(self):
         if not self.radio_proxy.isChecked():
-            text='Conexão atual: DIRETA'; self.connection_badge.setText('● CONEXÃO DIRETA')
+            text='Conexão atual: DIRETA'
+            if hasattr(self, 'connection_badge'):
+                self.connection_badge.setText('● CONEXÃO DIRETA')
         else:
             server=self.proxy_server.text().strip() or '(servidor não informado)'; port=self.proxy_port.text().strip() or '?'
             text=f'Conexão atual: PROXY ATIVO — {server}:{port}'
             if self.proxy_user.text().strip(): text += ' — autenticação nesta sessão'
-            self.connection_badge.setText('● PROXY ATIVO')
+            if hasattr(self, 'connection_badge'):
+                self.connection_badge.setText('● PROXY ATIVO')
         self.proxy_status.setText(text)
 
     def save_proxy_settings(self):

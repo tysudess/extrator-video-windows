@@ -75,3 +75,8 @@ ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
 - Botões Cortar, Excluir trecho, Duplicar, Esquerda e Direita reorganizados.
 - Exportação compacta com nome, resolução, H.264/H.265, tamanho alvo e botão EXPORTAR destacado.
 - Motor de edição, cortes, união, preview e compressão preservado.
+
+=== v1.9.18.1 — BUILD FIX ===
+- Corrige falha na inicialização da interface refinada: connection_badge agora é criado antes da carga da configuração de proxy.
+- Adicionada proteção defensiva no motor para não encerrar o programa caso um layout futuro não possua o selo visual de conexão.
+- Todo o layout e as funções da Etapa 2 foram preservados.

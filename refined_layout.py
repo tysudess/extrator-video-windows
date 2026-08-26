@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-core.APP_VERSION = 'Windows Portable v1.9.18 — Refino Visual Etapa 2 — Editor/Timeline'
+core.APP_VERSION = 'Windows Portable v1.9.18.1 — Refino Visual Etapa 2 — Build Fix'
 
 # A referência visual usa seis níveis explícitos. O motor passa a suportá-los de verdade.
 core.QUALIDADES = (
@@ -247,6 +247,13 @@ def build_refined_ui(self):
     self.analysis_data = {}
     self.quality_estimate_labels = []
 
+    # Compatibilidade com o motor original: _load_proxy_ui() chama
+    # _update_proxy_status() logo após a montagem da interface e esse método
+    # espera que o selo de conexão já exista.
+    self.connection_badge = QLabel('● CONEXÃO DIRETA')
+    self.connection_badge.setObjectName('StatusBadge')
+    self.connection_badge.hide()
+
     root = QWidget(); root.setObjectName('RefinedRoot')
     self.setCentralWidget(root)
     root_layout = QHBoxLayout(root); root_layout.setContentsMargins(0,0,0,0); root_layout.setSpacing(0)
@@ -282,7 +289,7 @@ def build_refined_ui(self):
     btn_theme = QPushButton('☾'); btn_theme.setObjectName('RefinedSmallButton'); btn_theme.setToolTip('Tema escuro')
     mini.addWidget(btn_sidebar_folder); mini.addWidget(btn_help); mini.addWidget(btn_theme)
     sb.addLayout(mini)
-    ver = QLabel('v1.9.18  •  ETAPA 2'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    ver = QLabel('v1.9.18.1  •  ETAPA 2'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
     sb.addWidget(ver)
     root_layout.addWidget(sidebar)
 
