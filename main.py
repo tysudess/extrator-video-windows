@@ -28,20 +28,24 @@ from advanced_editor import AdvancedVideoEditorWidget
 APP_NAME = 'Extrator de Vídeos'
 APP_VERSION = 'Windows Portable v1.9.18 — Refino Visual Etapa 2 — Editor/Timeline'
 
-QUALIDADES = ('360p', '480p', '720p HD', '1080p Full HD', 'Melhor disponível')
+# A ordem precisa ser exatamente a mesma exibida no layout refinado.
+# Isso evita que 720p solicite 1080p (ou outra qualidade) por engano.
+QUALIDADES = ('2160p (4K)', '1440p (2K)', '1080p Full HD', '720p HD', '480p', '360p')
 FORMATS = (
-    'bv*[height<=360][ext=mp4]+ba[ext=m4a]/b[height<=360][ext=mp4]/bv*[height<=360]+ba/b[height<=360]/b',
-    'bv*[height<=480][ext=mp4]+ba[ext=m4a]/b[height<=480][ext=mp4]/bv*[height<=480]+ba/b[height<=480]/b',
-    'bv*[height<=720][ext=mp4]+ba[ext=m4a]/b[height<=720][ext=mp4]/bv*[height<=720]+ba/b[height<=720]/b',
-    'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/bv*[height<=1080]+ba/b[height<=1080]/b',
-    'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b',
+    'bv*[height<=2160]+ba/b[height<=2160]/b',
+    'bv*[height<=1440]+ba/b[height<=1440]/b',
+    'bv*[height<=1080]+ba/b[height<=1080]/b',
+    'bv*[height<=720]+ba/b[height<=720]/b',
+    'bv*[height<=480]+ba/b[height<=480]/b',
+    'bv*[height<=360]+ba/b[height<=360]/b',
 )
 COMPAT_FORMATS = (
-    'b[height<=360][ext=mp4]/b[height<=360]/b',
-    'b[height<=480][ext=mp4]/b[height<=480]/b',
-    'b[height<=720][ext=mp4]/b[height<=720]/b',
-    'b[height<=1080][ext=mp4]/b[height<=1080]/b',
-    'b[ext=mp4]/b',
+    'b[height<=2160]/b',
+    'b[height<=1440]/b',
+    'b[height<=1080]/b',
+    'b[height<=720]/b',
+    'b[height<=480]/b',
+    'b[height<=360]/b',
 )
 
 

@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-core.APP_VERSION = 'Windows Portable v1.9.20 — Live do início até agora'
+core.APP_VERSION = 'Windows Portable v1.9.20.1 — Live format fix'
 
 # A referência visual usa seis níveis explícitos. O motor passa a suportá-los de verdade.
 core.QUALIDADES = (
@@ -424,20 +424,38 @@ class LiveSnapshotWorker(QThread):
             self.message.emit('🔴 Confirmando a live e congelando o ponto final…')
             target, _data = self._refresh_target()
             self.message.emit(f'🔴 LIVE: baixar 00:00:00 → {self._time_arg(target)}. A transmissão continuará, mas o arquivo parará nesse ponto.')
-            fmt = core.FORMATS[self.quality_index]
-            ok, path, err = self._run_attempt(fmt, target, 'Baixando a live desde o início até o ponto congelado…')
-            if not ok and not self._cancel_requested:
-                compat = core.COMPAT_FORMATS[self.quality_index]
-                ok, path, err2 = self._run_attempt(compat, target, 'Tentando modo LIVE compatível (MP4 combinado)…')
-                if not ok:
-                    err = err2 or err
+            # Para live, não prendemos a captura a ext=mp4/m4a. O YouTube pode
+            # expor apenas HLS/DASH naquele momento; a conversão para MP4/H.264
+            # acontece depois. Cada tentativa respeita a altura escolhida.
+            heights = [2160, 1440, 1080, 720, 480, 360]
+            height = heights[self.quality_index]
+            attempts = [
+                (f'bv*[height<={height}]+ba/b[height<={height}]/b',
+                 f'Baixando LIVE até {height}p desde o início…'),
+                (f'bestvideo[height<={height}]+bestaudio/best[height<={height}]/best',
+                 f'Tentando formato alternativo LIVE até {height}p…'),
+                (f'best[height<={height}]/best',
+                 f'Tentando formato combinado LIVE até {height}p…'),
+            ]
+            ok = False; path = ''; err = ''
+            for fmt, label in attempts:
+                if self._cancel_requested:
+                    break
+                ok, path, current_err = self._run_attempt(fmt, target, label)
+                if ok:
+                    break
+                if current_err:
+                    err = current_err
             if self._cancel_requested:
                 self.canceled.emit(); return
             if not ok:
-                raise RuntimeError(
-                    'Não foi possível recortar esta live do início até agora. O YouTube/yt-dlp ainda trata esse recurso como experimental e algumas lives não expõem DVR/range compatível.\n\n'
-                    + (err[-1800:] if err else '')
-                )
+                low = (err or '').lower()
+                if 'requested format is not available' in low:
+                    reason = ('A live possui DVR, mas o YouTube não ofereceu um formato compatível com a qualidade escolhida durante a captura. '
+                              'Tente uma qualidade menor ou atualize o yt-dlp.')
+                else:
+                    reason = ('Não foi possível recortar esta live do início até agora. Algumas transmissões não expõem DVR/range compatível para o yt-dlp.')
+                raise RuntimeError(reason + '\n\n' + (err[-1800:] if err else ''))
             path = self._ensure_h264(path)
             self.progress.emit(100)
             self.message.emit('Live salva do início até o ponto em que o download foi iniciado.')
@@ -518,7 +536,7 @@ def build_refined_ui(self):
     btn_theme = QPushButton('☾'); btn_theme.setObjectName('RefinedSmallButton'); btn_theme.setToolTip('Tema escuro')
     mini.addWidget(btn_sidebar_folder); mini.addWidget(btn_help); mini.addWidget(btn_theme)
     sb.addLayout(mini)
-    ver = QLabel('v1.9.20  •  LIVE + TIMELINE'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    ver = QLabel('v1.9.20.1  •  LIVE + TIMELINE'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
     sb.addWidget(ver)
     root_layout.addWidget(sidebar)
 
