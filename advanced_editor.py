@@ -751,196 +751,188 @@ class AdvancedVideoEditorWidget(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(24, 22, 24, 24)
-        root.setSpacing(14)
+        root.setContentsMargins(16, 14, 16, 16)
+        root.setSpacing(12)
 
-        title = QLabel('STUDIO // TIMELINE PREMIUM')
-        title.setObjectName('EditorTitle')
-        root.addWidget(title)
-        desc = QLabel(
-            'Edição no padrão do Android: ajuste fino integrado à timeline, corte com tesourinha, '
-            'duplicação, reordenação, miniaturas, zoom, prévia contínua e compressão inteligente.'
+        card_css = (
+            'background:qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #0a1020, stop:1 #0d1528);'
+            'border:1px solid #233152; border-radius:16px;'
         )
-        desc.setObjectName('Subtitle'); desc.setWordWrap(True)
-        root.addWidget(desc)
+        ghost_css = (
+            'QPushButton {background:#0d1528; border:1px solid #273758; color:#dce6ff; '
+            'border-radius:10px; padding:9px 14px; font-weight:650;} '
+            'QPushButton:hover {background:#15203a; border-color:#455b8a;}'
+        )
+        primary_css = (
+            'QPushButton {background:qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #7b2ff7, stop:1 #2b69ff); '
+            'border:1px solid #8b63ff; color:white; border-radius:10px; padding:10px 16px; font-weight:750;} '
+            'QPushButton:hover {background:qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #8d45ff, stop:1 #3c7bff);}'
+        )
+        danger_css = (
+            'QPushButton {background:#35131f; border:1px solid #8d2945; color:#ffb4c5; '
+            'border-radius:10px; padding:9px 14px; font-weight:700;} '
+            'QPushButton:hover {background:#4b192a;}'
+        )
+        field_css = (
+            'QLineEdit {background:#090f1c; border:1px solid #2a3a5f; border-radius:9px; '
+            'padding:8px 10px; color:#f2f6ff; font-family:Consolas; font-size:10.5pt;} '
+            'QLineEdit:focus {border:1px solid #715cff;}'
+        )
 
-        metrics = QHBoxLayout()
-        metrics.setSpacing(10)
-        self.metric_clips = QLabel('CLIPES  •  0')
-        self.metric_duration = QLabel('DURAÇÃO  •  00:00')
-        self.metric_output = QLabel('SAÍDA  •  ORIGINAL / H.265')
-        self.metric_output.setProperty('accent', 'true')
-        for metric in (self.metric_clips, self.metric_duration, self.metric_output):
-            metric.setObjectName('MetricCard'); metric.setAlignment(Qt.AlignmentFlag.AlignCenter); metric.setMinimumHeight(48)
-            metrics.addWidget(metric, 1)
-        root.addLayout(metrics)
+        # Cabeçalho compacto no estilo da referência aprovada.
+        header = QWidget(); header.setStyleSheet(card_css)
+        hh = QHBoxLayout(header); hh.setContentsMargins(16, 12, 16, 12); hh.setSpacing(10)
+        title_stack = QVBoxLayout(); title_stack.setSpacing(2)
+        title = QLabel('EDITOR DE VÍDEO')
+        title.setStyleSheet('color:#ffffff; font-size:15pt; font-weight:800; background:transparent; border:none;')
+        self.selected_label = QLabel('Nenhum vídeo selecionado')
+        self.selected_label.setStyleSheet('color:#a9b5cf; font-size:10pt; background:transparent; border:none;')
+        self.selected_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        title_stack.addWidget(title); title_stack.addWidget(self.selected_label)
+        hh.addLayout(title_stack, 1)
+        self.btn_add = QPushButton('▣  Abrir vídeo')
+        self.btn_add.setStyleSheet(ghost_css)
+        self.btn_reset_visual = QPushButton('↻  Redefinir')
+        self.btn_reset_visual.setStyleSheet(ghost_css)
+        hh.addWidget(self.btn_add); hh.addWidget(self.btn_reset_visual)
+        root.addWidget(header)
 
-        top_actions = QHBoxLayout()
-        top_actions.setSpacing(8)
-        self.btn_add = QPushButton('＋  ADICIONAR VÍDEOS'); self.btn_add.setProperty('role', 'primary')
-        self.btn_up = QPushButton('↑  SUBIR'); self.btn_up.setProperty('role', 'tool')
-        self.btn_down = QPushButton('↓  DESCER'); self.btn_down.setProperty('role', 'tool')
-        self.btn_duplicate = QPushButton('⧉  DUPLICAR'); self.btn_duplicate.setProperty('role', 'tool')
-        self.btn_cut = QPushButton('✂  CORTAR NO CURSOR'); self.btn_cut.setProperty('role', 'accent')
-        self.btn_remove = QPushButton('⌫  EXCLUIR TRECHO'); self.btn_remove.setProperty('role', 'danger')
-        for b in (self.btn_add, self.btn_up, self.btn_down, self.btn_duplicate, self.btn_cut, self.btn_remove):
-            top_actions.addWidget(b)
-        top_actions.addStretch(1)
-        root.addLayout(top_actions)
-
-        preview_box = QGroupBox('MONITOR // PRÉVIA CONTÍNUA')
-        pv = QVBoxLayout(preview_box)
-        self.video = QVideoWidget()
-        self.video.setMinimumHeight(250)
-        self.video.setMaximumHeight(400)
+        # Preview grande + marcação rápida à direita.
+        top = QHBoxLayout(); top.setSpacing(12)
+        preview_card = QWidget(); preview_card.setStyleSheet(card_css)
+        pv = QVBoxLayout(preview_card); pv.setContentsMargins(12, 12, 12, 12); pv.setSpacing(8)
+        self.video = QVideoWidget(); self.video.setMinimumHeight(300); self.video.setMaximumHeight(430)
         self.player.setVideoOutput(self.video)
-        pv.addWidget(self.video)
-        control = QHBoxLayout()
-        self.btn_back5 = QPushButton('−5s'); self.btn_back5.setProperty('role', 'transport')
-        self.btn_play = QPushButton('▶  PLAY'); self.btn_play.setProperty('role', 'transportPrimary')
-        self.btn_forward5 = QPushButton('+5s'); self.btn_forward5.setProperty('role', 'transport')
-        self.seq_current = QLabel('00:00 / 00:00')
-        control.addWidget(self.btn_back5); control.addWidget(self.btn_play); control.addWidget(self.btn_forward5)
-        control.addWidget(self.seq_current); control.addStretch(1)
-        pv.addLayout(control)
-        root.addWidget(preview_box)
+        pv.addWidget(self.video, 1)
+        controls = QHBoxLayout(); controls.setSpacing(7)
+        self.btn_back5 = QPushButton('−5s'); self.btn_back5.setStyleSheet(ghost_css)
+        self.btn_play = QPushButton('▶  Reproduzir'); self.btn_play.setStyleSheet(primary_css)
+        self.btn_forward5 = QPushButton('+5s'); self.btn_forward5.setStyleSheet(ghost_css)
+        self.seq_current = QLabel('00:00.000 / 00:00.000')
+        self.seq_current.setStyleSheet('color:#bdc9e2; font-family:Consolas; background:transparent; border:none; padding-left:8px;')
+        controls.addWidget(self.btn_back5); controls.addWidget(self.btn_play); controls.addWidget(self.btn_forward5)
+        controls.addWidget(self.seq_current); controls.addStretch(1)
+        pv.addLayout(controls)
+        top.addWidget(preview_card, 7)
 
-        timeline_box = QGroupBox('TIMELINE // SEQUÊNCIA')
-        tl = QVBoxLayout(timeline_box)
-        tl.setSpacing(10)
-        zoom_row = QHBoxLayout()
+        quick = QWidget(); quick.setStyleSheet(card_css); quick.setMinimumWidth(280); quick.setMaximumWidth(360)
+        ql = QVBoxLayout(quick); ql.setContentsMargins(14, 14, 14, 14); ql.setSpacing(10)
+        qt = QLabel('Marcação rápida')
+        qt.setStyleSheet('color:#ffffff; font-size:12pt; font-weight:750; background:transparent; border:none;')
+        ql.addWidget(qt)
+        mark_row = QHBoxLayout(); mark_row.setSpacing(8)
+        self.btn_mark_start = QPushButton('Início aqui'); self.btn_mark_start.setStyleSheet(ghost_css)
+        self.btn_mark_end = QPushButton('Fim aqui'); self.btn_mark_end.setStyleSheet(ghost_css)
+        mark_row.addWidget(self.btn_mark_start); mark_row.addWidget(self.btn_mark_end)
+        ql.addLayout(mark_row)
+
+        self.start_edit = QLineEdit(); self.start_edit.setPlaceholderText('00:00:00.000'); self.start_edit.setStyleSheet(field_css)
+        self.end_edit = QLineEdit(); self.end_edit.setPlaceholderText('00:00:00.000'); self.end_edit.setStyleSheet(field_css)
+        self.duration_value = QLabel('00:00:00.000')
+        self.duration_value.setStyleSheet('color:#f2f6ff; font-family:Consolas; background:#090f1c; border:1px solid #2a3a5f; border-radius:9px; padding:8px 10px;')
+        for label_text, widget in [('Início:', self.start_edit), ('Fim:', self.end_edit), ('Duração:', self.duration_value)]:
+            row = QHBoxLayout(); lab = QLabel(label_text); lab.setMinimumWidth(66)
+            lab.setStyleSheet('color:#bac5dc; background:transparent; border:none;')
+            row.addWidget(lab); row.addWidget(widget, 1); ql.addLayout(row)
+        self.btn_apply = QPushButton('✓  Aplicar tempos'); self.btn_apply.setStyleSheet(primary_css); ql.addWidget(self.btn_apply)
+        self.info_label = QLabel('Selecione um clipe na timeline para ajustar o trecho.')
+        self.info_label.setWordWrap(True); self.info_label.setStyleSheet('color:#8f9fbd; background:transparent; border:none; font-size:9.5pt;')
+        ql.addWidget(self.info_label); ql.addStretch(1)
+        top.addWidget(quick, 3)
+        root.addLayout(top)
+
+        # Timeline visual compacta.
+        timeline_card = QWidget(); timeline_card.setStyleSheet(card_css)
+        tl = QVBoxLayout(timeline_card); tl.setContentsMargins(12, 12, 12, 12); tl.setSpacing(8)
+        timeline_head = QHBoxLayout(); timeline_head.setSpacing(8)
+        label_tl = QLabel('TIMELINE')
+        label_tl.setStyleSheet('color:#ffffff; font-weight:800; letter-spacing:1px; background:transparent; border:none;')
         self.clip_count = QLabel('0 clipes • 00:00')
-        self.btn_zoom_out = QPushButton('−  ZOOM'); self.btn_zoom_out.setProperty('role', 'nudge')
-        self.zoom_label = QLabel('Zoom 4.8 px/s'); self.zoom_label.setObjectName('ZoomBadge')
-        self.btn_zoom_in = QPushButton('+  ZOOM'); self.btn_zoom_in.setProperty('role', 'nudge')
-        zoom_row.addWidget(self.clip_count); zoom_row.addStretch(1)
-        zoom_row.addWidget(self.btn_zoom_out); zoom_row.addWidget(self.zoom_label); zoom_row.addWidget(self.btn_zoom_in)
-        tl.addLayout(zoom_row)
-        self.timeline_scroll = QScrollArea()
-        self.timeline_scroll.setWidgetResizable(False)
+        self.clip_count.setStyleSheet('color:#96a6c4; background:transparent; border:none;')
+        self.local_position = QLabel('CURSOR  •  00:00.000')
+        self.local_position.setStyleSheet('color:#67e8f9; background:#0b1e2d; border:1px solid #155e75; border-radius:8px; padding:4px 8px; font-family:Consolas; font-weight:700;')
+        self.btn_zoom_out = QPushButton('−'); self.btn_zoom_out.setStyleSheet(ghost_css); self.btn_zoom_out.setFixedWidth(42)
+        self.zoom_label = QLabel('Zoom 3/6')
+        self.zoom_label.setStyleSheet('color:#72e4ff; background:transparent; border:none; font-weight:700;')
+        self.btn_zoom_in = QPushButton('+'); self.btn_zoom_in.setStyleSheet(ghost_css); self.btn_zoom_in.setFixedWidth(42)
+        timeline_head.addWidget(label_tl); timeline_head.addWidget(self.clip_count); timeline_head.addStretch(1)
+        timeline_head.addWidget(self.local_position); timeline_head.addWidget(self.btn_zoom_out); timeline_head.addWidget(self.zoom_label); timeline_head.addWidget(self.btn_zoom_in)
+        tl.addLayout(timeline_head)
+
+        self.timeline_scroll = QScrollArea(); self.timeline_scroll.setWidgetResizable(False)
         self.timeline_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.timeline_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.timeline_scroll.setMinimumHeight(170)
-        self.timeline = TimelineWidget()
-        self.timeline.set_pixels_per_second(self.ZOOM_LEVELS[self.zoom_index])
-        self.timeline_scroll.setWidget(self.timeline)
-        tl.addWidget(self.timeline_scroll)
+        self.timeline_scroll.setMinimumHeight(150); self.timeline_scroll.setMaximumHeight(190)
+        self.timeline = TimelineWidget(); self.timeline.set_pixels_per_second(self.ZOOM_LEVELS[self.zoom_index])
+        self.timeline_scroll.setWidget(self.timeline); tl.addWidget(self.timeline_scroll)
 
-        # Controles de precisão integrados diretamente à timeline (padrão premium).
-        self.precision_panel = QWidget()
-        self.precision_panel.setObjectName('TimelinePrecisionPanel')
-        cb = QVBoxLayout(self.precision_panel)
-        cb.setContentsMargins(14, 12, 14, 12)
-        cb.setSpacing(9)
+        # Range do clipe selecionado logo abaixo da timeline.
+        self.range = RangeSlider(); self.range.setMinimumHeight(36); self.range.setMaximumHeight(46)
+        tl.addWidget(self.range)
 
-        selected_row = QHBoxLayout()
-        selected_row.setSpacing(12)
-        selected_stack = QVBoxLayout()
-        selected_stack.setSpacing(2)
-        selected_kicker = QLabel('CLIPE SELECIONADO')
-        selected_kicker.setObjectName('SectionKicker')
-        self.selected_label = QLabel('Selecione um clipe na timeline')
-        self.selected_label.setObjectName('TimelineSelectedClip')
-        self.info_label = QLabel('')
-        self.info_label.setObjectName('TimelineClipInfo')
-        self.info_label.setWordWrap(True)
-        selected_stack.addWidget(selected_kicker)
-        selected_stack.addWidget(self.selected_label)
-        selected_stack.addWidget(self.info_label)
-        selected_row.addLayout(selected_stack, 1)
-        self.local_position = QLabel('CURSOR  •  --:--')
-        self.local_position.setObjectName('PlayheadBadge')
-        selected_row.addWidget(self.local_position, 0, Qt.AlignmentFlag.AlignTop)
-        cb.addLayout(selected_row)
-
-        self.range = RangeSlider()
-        self.range.setMinimumHeight(38)
-        cb.addWidget(self.range)
-
-        precision_row = QHBoxLayout()
-        precision_row.setSpacing(7)
-        fine_label = QLabel('AJUSTE FINO')
-        fine_label.setObjectName('SectionKicker')
-        precision_row.addWidget(fine_label)
+        precision = QHBoxLayout(); precision.setSpacing(7)
         self.nudge_buttons = []
         for delta, text in [(-1000, '−1s'), (-100, '−100ms'), (-10, '−10ms'), (10, '+10ms'), (100, '+100ms'), (1000, '+1s')]:
-            b = QPushButton(text)
-            b.setProperty('role', 'nudge')
-            b.setToolTip(f'Mover o cursor {text}')
-            b.clicked.connect(lambda _=False, d=delta: self._nudge_local(d))
-            self.nudge_buttons.append(b)
-            precision_row.addWidget(b)
-        precision_row.addStretch(1)
-        self.btn_mark_start = QPushButton('◀  MARCAR INÍCIO'); self.btn_mark_start.setProperty('role', 'mark')
-        self.btn_mark_end = QPushButton('MARCAR FIM  ▶'); self.btn_mark_end.setProperty('role', 'mark')
-        precision_row.addWidget(self.btn_mark_start)
-        precision_row.addWidget(self.btn_mark_end)
-        cb.addLayout(precision_row)
+            b = QPushButton(text); b.setStyleSheet(ghost_css); b.setToolTip(f'Mover o cursor {text}')
+            b.clicked.connect(lambda _=False, d=delta: self._nudge_local(d)); self.nudge_buttons.append(b); precision.addWidget(b)
+        precision.addStretch(1)
+        self.btn_cut = QPushButton('✂  Cortar'); self.btn_cut.setStyleSheet(primary_css)
+        self.btn_remove = QPushButton('⌫  Excluir trecho'); self.btn_remove.setStyleSheet(danger_css)
+        precision.addWidget(self.btn_cut); precision.addWidget(self.btn_remove)
+        tl.addLayout(precision)
 
-        fields = QHBoxLayout()
-        fields.setSpacing(8)
-        in_tag = QLabel('IN'); in_tag.setObjectName('FieldTag')
-        out_tag = QLabel('OUT'); out_tag.setObjectName('FieldTag')
-        self.start_edit = QLineEdit()
-        self.end_edit = QLineEdit()
-        self.start_edit.setPlaceholderText('HH:MM:SS.mmm')
-        self.end_edit.setPlaceholderText('HH:MM:SS.mmm')
-        self.btn_apply = QPushButton('✓  APLICAR TEMPOS'); self.btn_apply.setProperty('role', 'accent')
-        fields.addWidget(in_tag)
-        fields.addWidget(self.start_edit, 1)
-        fields.addWidget(out_tag)
-        fields.addWidget(self.end_edit, 1)
-        fields.addWidget(self.btn_apply)
-        cb.addLayout(fields)
-        tl.addWidget(self.precision_panel)
-        root.addWidget(timeline_box)
+        manage = QHBoxLayout(); manage.setSpacing(7)
+        self.btn_duplicate = QPushButton('⧉  Duplicar'); self.btn_duplicate.setStyleSheet(ghost_css)
+        self.btn_up = QPushButton('←  Esquerda'); self.btn_up.setStyleSheet(ghost_css)
+        self.btn_down = QPushButton('Direita  →'); self.btn_down.setStyleSheet(ghost_css)
+        manage.addWidget(self.btn_duplicate); manage.addWidget(self.btn_up); manage.addWidget(self.btn_down); manage.addStretch(1)
+        tl.addLayout(manage)
+        root.addWidget(timeline_card)
 
-        export_box = QGroupBox('EXPORTAÇÃO // COMPRESSÃO INTELIGENTE')
-        ex = QVBoxLayout(export_box)
-        row1 = QHBoxLayout()
-        row1.addWidget(QLabel('Nome:'))
-        self.output_name = QLineEdit('video_final.mp4')
-        row1.addWidget(self.output_name, 1)
-        row1.addWidget(QLabel('Resolução:'))
+        # Exportação mantém todas as funções, mas em formato visual compacto.
+        export_card = QWidget(); export_card.setStyleSheet(card_css)
+        ex = QVBoxLayout(export_card); ex.setContentsMargins(14, 12, 14, 12); ex.setSpacing(8)
+        export_head = QHBoxLayout(); export_head.setSpacing(8)
+        export_title = QLabel('EXPORTAÇÃO')
+        export_title.setStyleSheet('color:#ffffff; font-size:11.5pt; font-weight:750; background:transparent; border:none;')
+        export_head.addWidget(export_title)
+        self.output_name = QLineEdit('video_final.mp4'); self.output_name.setStyleSheet(field_css)
         self.resolution = QComboBox(); self.resolution.addItems(['Original', '360p', '480p', '720p', '1080p'])
-        row1.addWidget(self.resolution)
-        row1.addWidget(QLabel('Codec:'))
         self.codec = QComboBox(); self.codec.addItems(['H.264 / AVC', 'H.265 / HEVC']); self.codec.setCurrentIndex(1)
-        row1.addWidget(self.codec)
-        ex.addLayout(row1)
+        export_head.addWidget(QLabel('Nome:')); export_head.addWidget(self.output_name, 1)
+        export_head.addWidget(QLabel('Resolução:')); export_head.addWidget(self.resolution)
+        export_head.addWidget(QLabel('Codec:')); export_head.addWidget(self.codec)
+        self.btn_export = QPushButton('⇧  EXPORTAR'); self.btn_export.setStyleSheet(primary_css); self.btn_export.setMinimumWidth(150)
+        export_head.addWidget(self.btn_export)
+        ex.addLayout(export_head)
 
         self.target_check = QCheckBox('Definir tamanho aproximado do arquivo final')
         ex.addWidget(self.target_check)
-        self.target_panel = QWidget()
-        tp = QVBoxLayout(self.target_panel); tp.setContentsMargins(0, 0, 0, 0)
-        self.target_label = QLabel('≈ 30 MB')
+        self.target_panel = QWidget(); tp = QHBoxLayout(self.target_panel); tp.setContentsMargins(0,0,0,0); tp.setSpacing(8)
+        self.target_min_label = QLabel('1 MB'); self.target_max_label = QLabel('100 MB'); self.target_label = QLabel('≈ 30 MB')
         self.target_slider = QSlider(Qt.Orientation.Horizontal); self.target_slider.setRange(0, 1000)
-        limits = QHBoxLayout(); self.target_min_label = QLabel('1 MB'); self.target_max_label = QLabel('100 MB')
-        limits.addWidget(self.target_min_label); limits.addStretch(1); limits.addWidget(self.target_label); limits.addStretch(1); limits.addWidget(self.target_max_label)
-        tp.addLayout(limits); tp.addWidget(self.target_slider)
-        ex.addWidget(self.target_panel)
-        self.target_panel.setVisible(False)
+        tp.addWidget(self.target_min_label); tp.addWidget(self.target_slider, 1); tp.addWidget(self.target_label); tp.addWidget(self.target_max_label)
+        ex.addWidget(self.target_panel); self.target_panel.setVisible(False)
         self.estimate_label = QLabel('Adicione um vídeo para calcular bitrate e tamanho estimado.')
-        self.estimate_label.setWordWrap(True)
+        self.estimate_label.setStyleSheet('color:#91a1bf; background:transparent; border:none;'); self.estimate_label.setWordWrap(True)
         ex.addWidget(self.estimate_label)
-
-        export_actions = QHBoxLayout()
-        self.btn_export = QPushButton('⚡  EXPORTAR TIMELINE'); self.btn_export.setProperty('role', 'primary')
-        self.btn_folder = QPushButton('▣  ABRIR PASTA'); self.btn_folder.setProperty('role', 'tool')
-        export_actions.addWidget(self.btn_export); export_actions.addWidget(self.btn_folder); export_actions.addStretch(1)
-        ex.addLayout(export_actions)
-        progress_row = QHBoxLayout()
-        self.progress = QProgressBar(); self.progress.setRange(0, 100); self.progress.setFormat('Exportação: %p%')
+        progress_row = QHBoxLayout(); self.progress = QProgressBar(); self.progress.setRange(0,100); self.progress.setFormat('Exportação: %p%')
         self.percent = QLabel('0%'); self.percent.setMinimumWidth(44)
-        progress_row.addWidget(self.progress, 1); progress_row.addWidget(self.percent)
-        ex.addLayout(progress_row)
+        self.btn_folder = QPushButton('▣  Abrir pasta'); self.btn_folder.setStyleSheet(ghost_css)
+        progress_row.addWidget(self.progress, 1); progress_row.addWidget(self.percent); progress_row.addWidget(self.btn_folder); ex.addLayout(progress_row)
         self.status = QLabel('SISTEMA PRONTO  •  Adicione um vídeo à timeline para editar e exportar.')
-        self.status.setObjectName('InfoBanner'); self.status.setWordWrap(True)
+        self.status.setWordWrap(True); self.status.setStyleSheet('color:#a5b2cb; background:transparent; border:none;')
         ex.addWidget(self.status)
-        root.addWidget(export_box)
-        root.addStretch(1)
+        root.addWidget(export_card)
+
+        # Métricas mantidas para a lógica interna, sem ocupar espaço visual.
+        self.metric_clips = QLabel('CLIPES  •  0'); self.metric_clips.hide()
+        self.metric_duration = QLabel('DURAÇÃO  •  00:00'); self.metric_duration.hide()
+        self.metric_output = QLabel('SAÍDA  •  ORIGINAL / H.265'); self.metric_output.hide()
+        self.precision_panel = QWidget(); self.precision_panel.hide()
 
         self.btn_add.clicked.connect(self.add_videos)
+        self.btn_reset_visual.clicked.connect(self._reset_visual_selection)
         self.btn_up.clicked.connect(lambda: self.move_selected(-1))
         self.btn_down.clicked.connect(lambda: self.move_selected(1))
         self.btn_duplicate.clicked.connect(self.duplicate_selected)
@@ -969,6 +961,16 @@ class AdvancedVideoEditorWidget(QWidget):
         self.target_slider.valueChanged.connect(self._target_slider_changed)
         self.btn_export.clicked.connect(self.export_timeline)
         self.btn_folder.clicked.connect(self.open_folder)
+
+    def _reset_visual_selection(self):
+        self.pause_sequence()
+        if self.clips:
+            self.global_playhead_ms = 0
+            self.select_clip(0, True)
+            clip = self._current_clip()
+            if clip:
+                self.range.setValues(int(clip['start_ms']), int(clip['end_ms']))
+        self.status.setText('Editor redefinido para o início da sequência.')
 
     def _connect_player(self):
         self.player.positionChanged.connect(self._player_position_changed)
@@ -1077,6 +1079,8 @@ class AdvancedVideoEditorWidget(QWidget):
             self.selected_label.setText('Selecione um clipe na timeline')
             self.info_label.setText('')
             self.start_edit.clear(); self.end_edit.clear()
+            if hasattr(self, 'duration_value'):
+                self.duration_value.setText('00:00:00.000')
             self._update_controls()
             return
         info = clip.get('info') or {}
@@ -1090,6 +1094,8 @@ class AdvancedVideoEditorWidget(QWidget):
         self._changing_range = True
         self.start_edit.setText(format_ms(clip['start_ms']))
         self.end_edit.setText(format_ms(clip['end_ms']))
+        if hasattr(self, 'duration_value'):
+            self.duration_value.setText(format_ms(int(clip['end_ms']) - int(clip['start_ms'])))
         self.range.setRange(0, max(1, int(clip['duration_ms'])))
         self.range.setValues(int(clip['start_ms']), int(clip['end_ms']), emit=False)
         self.range.setPosition(int(clip['start_ms']), emit=False)
@@ -1214,6 +1220,8 @@ class AdvancedVideoEditorWidget(QWidget):
             return
         clip['start_ms'] = int(start); clip['end_ms'] = int(end)
         self.start_edit.setText(format_ms(start)); self.end_edit.setText(format_ms(end))
+        if hasattr(self, 'duration_value'):
+            self.duration_value.setText(format_ms(int(end) - int(start)))
         self._refresh_timeline(True)
 
     def _range_handle_moved(self, which, pos):
@@ -1261,6 +1269,8 @@ class AdvancedVideoEditorWidget(QWidget):
         self.pause_sequence()
         clip['start_ms'] = pos
         self.start_edit.setText(format_ms(pos))
+        if hasattr(self, 'duration_value'):
+            self.duration_value.setText(format_ms(int(clip['end_ms']) - int(clip['start_ms'])))
         self._changing_range = True
         self.range.setValues(clip['start_ms'], clip['end_ms'], emit=False)
         self._changing_range = False
@@ -1280,6 +1290,8 @@ class AdvancedVideoEditorWidget(QWidget):
         self.pause_sequence()
         clip['end_ms'] = pos
         self.end_edit.setText(format_ms(pos))
+        if hasattr(self, 'duration_value'):
+            self.duration_value.setText(format_ms(int(clip['end_ms']) - int(clip['start_ms'])))
         self._changing_range = True
         self.range.setValues(clip['start_ms'], clip['end_ms'], emit=False)
         self._changing_range = False
@@ -1426,7 +1438,7 @@ class AdvancedVideoEditorWidget(QWidget):
         self.zoom_index = max(0, min(len(self.ZOOM_LEVELS) - 1, self.zoom_index + int(delta)))
         pps = self.ZOOM_LEVELS[self.zoom_index]
         self.timeline.set_pixels_per_second(pps)
-        self.zoom_label.setText(f'Zoom {pps:g} px/s')
+        self.zoom_label.setText(f'Zoom {self.zoom_index + 1}/{len(self.ZOOM_LEVELS)}')
         self._update_global_ui(auto_scroll=True)
 
     def _target_toggled(self, checked):

@@ -26,7 +26,7 @@ from range_slider import RangeSlider
 from advanced_editor import AdvancedVideoEditorWidget
 
 APP_NAME = 'Extrator de Vídeos'
-APP_VERSION = 'Windows Portable v1.9.12 — Future UI — Timeline + compressão inteligente'
+APP_VERSION = 'Windows Portable v1.9.18 — Refino Visual Etapa 2 — Editor/Timeline'
 
 QUALIDADES = ('360p', '480p', '720p HD', '1080p Full HD', 'Melhor disponível')
 FORMATS = (

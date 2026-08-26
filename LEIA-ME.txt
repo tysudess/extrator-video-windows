@@ -55,3 +55,23 @@ O workflow baixa automaticamente os binários, gera o EXE com o novo ícone, mon
 
 ARQUIVO FINAL
 ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
+
+=== v1.9.17 — REFINO VISUAL ETAPA 1 ===
+- Tela principal redesenhada para se aproximar da referência aprovada.
+- Menu lateral: Início, Download, Editor, Unir Vídeos, Histórico e Configurações.
+- Botão ANALISAR com leitura real de metadados pelo yt-dlp.
+- Qualidades: 2160p, 1440p, 1080p, 720p, 480p e 360p.
+- Cards de informações do vídeo, escolha de qualidade e resumo do download.
+- Painel direito com identidade do novo design e visualização do ícone.
+- Motor de download, proxy, Timeline Premium, H.264/H.265 e união preservados.
+
+
+=== v1.9.18 — REFINO VISUAL ETAPA 2 ===
+- Editor/Timeline redesenhado para ficar muito mais fiel à referência aprovada.
+- Preview de vídeo ampliado.
+- Painel Marcação rápida à direita com Início, Fim e Duração.
+- Timeline compacta com zoom, cursor e range do clipe selecionado.
+- Ajustes −1s / −100ms / −10ms / +10ms / +100ms / +1s posicionados abaixo da timeline.
+- Botões Cortar, Excluir trecho, Duplicar, Esquerda e Direita reorganizados.
+- Exportação compacta com nome, resolução, H.264/H.265, tamanho alvo e botão EXPORTAR destacado.
+- Motor de edição, cortes, união, preview e compressão preservado.
