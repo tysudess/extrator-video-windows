@@ -1,87 +1,57 @@
-EXTRATOR DE VÍDEOS — WINDOWS PORTABLE v1.9.13
-TIMELINE + COMPRESSÃO INTELIGENTE
+EXTRATOR DE VÍDEOS — WINDOWS PORTABLE v1.9.16
+MODERN UI • TIMELINE PREMIUM • COMPRESSÃO INTELIGENTE
 
-ORIGEM DESTA VERSÃO
-- Base Windows preservada: v1.8.3 EDITOR-MS-BUILD-FIX3.
-- Recursos do projeto Android v1.9.10 COMPRESSÃO INTELIGENTE portados para o editor Windows.
-- O projeto não foi recriado do zero: download, YouTube, proxy, yt-dlp, Deno, corte e diagnóstico da base Windows continuam presentes.
-- A aba "Baixar" foi simplificada: o corte antigo foi removido dessa aba; corte e união ficam concentrados no Editor / Timeline.
+BASE PRESERVADA
+Esta versão parte da v1.9.15 TIMELINE PREMIUM. O motor funcional de download, proxy, edição, união e exportação foi preservado; a principal mudança é a nova interface visual e o novo ícone do aplicativo.
 
-EDITOR DE TIMELINE
-- Timeline unificada para 1 ou mais vídeos.
-- Prévia contínua da sequência, passando automaticamente de um clipe para o seguinte.
-- Linha de reprodução global independente dos marcadores de início/fim.
-- Corte no cursor com botão de tesourinha.
-- Após cortar, cada lado vira um trecho independente.
-- Excluir trecho selecionado.
-- Duplicar trecho selecionado.
-- Reordenar trechos com SUBIR/DESCER.
-- Miniaturas na timeline geradas pelo FFmpeg.
-- Zoom da timeline em 6 níveis.
-- Ajuste dos tempos com precisão em milissegundos.
-- Ajuste fino da posição atual: ±1s, ±100ms e ±10ms.
-- MARCAR INÍCIO AQUI / MARCAR FIM AQUI.
-- Campos de início e fim em HH:MM:SS.mmm.
+NOVA INTERFACE MODERNA
+- Navegação lateral fixa: Baixar / Editor Timeline / Proxy.
+- Cabeçalho com título da página e status da conexão.
+- Tela de download reorganizada em cards.
+- Botões maiores e melhor espaçamento para uso com mouse/touchpad.
+- Foco visual mais claro, contraste elevado e textos auxiliares.
+- Tema escuro roxo/azul/ciano alinhado ao preview aprovado.
+- Novo ícone embutido no ExtratorVideos.exe.
 
-EXPORTAÇÃO / COMPRESSÃO INTELIGENTE
-- Resoluções: Original, 360p, 480p, 720p e 1080p.
-- H.264 / AVC para maior compatibilidade.
-- H.265 / HEVC para maior compressão; selecionado por padrão.
-- Se libx265 não estiver disponível no FFmpeg, usa H.264 automaticamente.
-- Perfis de bitrate inspirados na versão Android v1.9.10.
-- Áudio AAC 128 kbps.
-- Controle opcional de tamanho aproximado do arquivo final.
-- O intervalo de MB é calculado conforme duração, resolução e codec.
-- A tela final informa tamanho real, codec e resolução usados.
-- Os originais são preservados.
-
-OBSERVAÇÃO SOBRE TAMANHO ALVO
-O tamanho é aproximado, porque a complexidade das cenas influencia a compressão. O programa calcula um bitrate compatível com o alvo solicitado e limita esse valor à faixa segura do perfil escolhido.
-
-DOWNLOAD / YOUTUBE / PROXY — MANTIDOS
-- Download de vídeos.
-- Suporte ao YouTube.
-- Escolha de qualidade.
-- yt-dlp NIGHTLY.
-- Deno para suporte JavaScript do YouTube.
+DOWNLOAD / YOUTUBE / PROXY
+- Download por link.
+- YouTube e sites compatíveis com yt-dlp.
+- Qualidades 360p, 480p, 720p, 1080p e melhor disponível.
+- yt-dlp NIGHTLY e Deno.
 - Conexão direta ou proxy.
-- Servidor, porta, usuário e senha.
-- Senha não é gravada.
-- Fallbacks específicos para YouTube em rede com proxy.
-- Diagnóstico em ultimo-erro-yt-dlp.txt quando necessário.
+- Senha do proxy não é gravada.
+- Diagnóstico do yt-dlp quando necessário.
 
-BUILD PELO GITHUB ACTIONS
-1. Coloque todos os arquivos deste ZIP na raiz do repositório.
-2. Abra Actions.
-3. Execute o workflow "Build Windows Portable v1.9.13 Future UI Build Fix".
-4. Baixe o artefato:
-   ExtratorVideos-Windows-Portable-v1.9.13-DESIGN-FUTURO-BUILD-FIX
+EDITOR / TIMELINE PREMIUM
+- Timeline unificada para 1 ou mais vídeos.
+- Miniaturas reais geradas pelo FFmpeg.
+- Linha de reprodução global.
+- Cortar no cursor com tesourinha.
+- Excluir, duplicar e reordenar trechos.
+- Prévia contínua da sequência.
+- Zoom da timeline.
+- Ajustes ±1s, ±100ms e ±10ms.
+- Marcar início/fim com precisão de milissegundos.
+- Campos HH:MM:SS.mmm.
 
-BINÁRIOS EMPACOTADOS PELO ACTIONS
+EXPORTAÇÃO / COMPRESSÃO
+- Resolução Original, 360p, 480p, 720p ou 1080p.
+- H.264 / AVC.
+- H.265 / HEVC para maior compressão.
+- Fallback automático para H.264 quando necessário.
+- Áudio AAC.
+- Controle opcional de tamanho aproximado.
+- Originais preservados.
+
+BUILD LOCAL
+Execute build_windows.bat depois de colocar em bin:
 - yt-dlp.exe
-- deno.exe
 - ffmpeg.exe
 - ffprobe.exe
+- deno.exe
 
-IMPORTANTE
-Esta versão deve ser testada no Windows antes de ser promovida a nova base oficial. A base oficial anterior v1.8.3 foi preservada como referência estável.
+BUILD GITHUB ACTIONS
+O workflow baixa automaticamente os binários, gera o EXE com o novo ícone, monta o portable e publica o ZIP diretamente em GitHub Releases.
 
-
-NOVIDADES v1.9.12 - DESIGN FUTURO
---------------------------------
-- Tema escuro profissional com destaque ciano.
-- Interface reorganizada visualmente sem remover funcoes.
-- Botoes principais, avisos, barras e abas com hierarquia visual moderna.
-- Editor com painel-resumo dinamico de clipes, duracao e configuracao de saida.
-- Timeline, corte em milissegundos e compressao inteligente preservados.
-- Aba Baixar continua simplificada; cortes ficam no Editor / Timeline.
-
-
-CORREÇÃO v1.9.13 - BUILD FFmpeg/FFprobe
----------------------------------------
-- Mantém integralmente o design e as funções da v1.9.12.
-- Corrige falha temporária HTTP 503 no download do FFmpeg.
-- Fonte principal do FFmpeg/FFprobe passa a ser GitHub Releases (BtbN).
-- Gyan.dev fica como fonte alternativa.
-- Cada fonte recebe até 4 tentativas automáticas antes do build falhar.
-- O pacote baixado continua sendo validado e os executáveis são testados antes da geração do aplicativo.
+ARQUIVO FINAL
+ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip

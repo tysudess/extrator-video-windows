@@ -1,19 +1,26 @@
-EXTRATOR DE VÍDEOS - WINDOWS v1.9.15 - TIMELINE PREMIUM
+EXTRATOR DE VIDEOS - WINDOWS PORTABLE v1.9.16 MODERN UI
 
-Base preservada: Windows Portable v1.9.13 DESIGN-FUTURO-BUILD-FIX
-Alteração principal: novo tema premium roxo/azul.
-Entrada do novo visual: novo_layout.py
+Esta versao parte diretamente da v1.9.15 TIMELINE PREMIUM e preserva o motor funcional.
 
-Para usar manualmente no GitHub:
-1. Envie todos os arquivos e pastas deste projeto para o repositório.
-2. Preserve a pasta .github/workflows.
-3. Execute o workflow "Build Windows Portable v1.9.15 Timeline Premium".
-4. O workflow gera o ZIP portable e publica também em GitHub Releases.
+NOVO DESIGN
+- Navegacao lateral: Baixar / Editor Timeline / Proxy.
+- Cabecalho de pagina com status da conexao.
+- Tela de download reorganizada em cards com melhor hierarquia visual.
+- Botoes maiores, foco mais visivel e melhor contraste para acessibilidade.
+- Identidade visual escura em roxo, azul e ciano.
+- Novo icone do aplicativo embutido no EXE via PyInstaller.
 
-As funções da base v1.9.13 foram preservadas.
+FUNCOES PRESERVADAS
+- yt-dlp e suporte a YouTube.
+- Qualidades 360p, 480p, 720p, 1080p e melhor disponivel.
+- Proxy opcional.
+- Preview e Timeline Premium.
+- Cortes e ajustes em milissegundos.
+- Exclusao de trechos e uniao de videos.
+- Exportacao H.264/H.265 e compressao inteligente.
+- FFmpeg, FFprobe e Deno portateis.
 
-ALTERAÇÕES v1.9.15:
-- Botões redesenhados com estética premium/futurista.
-- Ajustes -1s, -100ms, -10ms, +10ms, +100ms e +1s integrados à timeline.
-- Removido o bloco separado de Precisão / Clipe Selecionado.
-- Publicação direta no GitHub Releases, sem upload-artifact.
+BUILD
+- Entrada: modern_layout.py
+- Icone: ExtratorVideos-Icone.ico
+- GitHub Actions publica automaticamente em GitHub Releases.

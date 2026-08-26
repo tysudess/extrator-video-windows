@@ -18,15 +18,17 @@ if not exist bin\yt-dlp.exe goto :faltou
 if not exist bin\ffmpeg.exe goto :faltou
 if not exist bin\ffprobe.exe goto :faltou
 if not exist bin\deno.exe goto :faltou
+if not exist ExtratorVideos-Icone.ico goto :icone
 
-py -3.12 -m py_compile main.py novo_layout.py range_slider.py advanced_editor.py
+py -3.12 -m py_compile main.py novo_layout.py modern_layout.py range_slider.py advanced_editor.py
 if errorlevel 1 goto :erro
 
-py -3.12 -m PyInstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal novo_layout.py
+py -3.12 -m PyInstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon ExtratorVideos-Icone.ico modern_layout.py
 if errorlevel 1 goto :erro
 
 xcopy /E /I /Y bin dist\ExtratorVideos\bin >nul
 copy /Y LEIA-ME.txt dist\ExtratorVideos\LEIA-ME.txt >nul
+copy /Y ExtratorVideos-Icone.ico dist\ExtratorVideos\ExtratorVideos-Icone.ico >nul
 
 echo.
 echo Build concluido em dist\ExtratorVideos
@@ -35,6 +37,11 @@ exit /b 0
 
 :faltou
 echo ERRO: faltam executaveis na pasta bin.
+pause
+exit /b 1
+
+:icone
+echo ERRO: ExtratorVideos-Icone.ico nao foi encontrado.
 pause
 exit /b 1
 
