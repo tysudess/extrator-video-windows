@@ -88,3 +88,12 @@ ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
 - Botões Esquerda/Direita continuam disponíveis como alternativa.
 - Item Unir Vídeos removido do menu lateral; a união continua dentro do Editor/Timeline.
 - Todo o visual e recursos da v1.9.18.1 foram preservados.
+
+
+=== v1.9.20 — LIVE DO INÍCIO ATÉ AGORA ===
+- Ao analisar um link do YouTube que esteja AO VIVO, o aplicativo mostra o selo vermelho AO VIVO.
+- O botão muda para: BAIXAR DO INÍCIO ATÉ AGORA.
+- No momento em que você clica em baixar, o app consulta a live novamente e congela o ponto final.
+- Exemplo: se a live começou há 01:27:35, o objetivo do arquivo é 00:00:00 -> 01:27:35, sem continuar acompanhando depois.
+- Requer que a transmissão ofereça DVR/segmentos desde o início. O suporte do yt-dlp para recortes de live ainda é experimental; algumas lives podem não permitir esse modo.
+- Se o modo exato falhar, o aplicativo tenta novamente com formato MP4 combinado. Ele NÃO muda para download a partir do momento atual, pois isso seria diferente do modo solicitado.
