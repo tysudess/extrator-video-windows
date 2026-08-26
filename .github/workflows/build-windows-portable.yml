@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.16 Modern UI
+name: Build Windows Portable v1.9.18 Refino Etapa 2
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.16-modern-ui
+      - v1.9.18-refino-etapa2
 
 permissions:
   contents: write
@@ -94,12 +94,12 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py range_slider.py advanced_editor.py
 
       - name: Gerar aplicativo Modern UI
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" modern_layout.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout.py
 
       - name: Montar portable
         shell: powershell
@@ -113,22 +113,22 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.18-REFINO-ETAPA2.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.16-modern-ui
+          tag_name: v1.9.18-refino-etapa2
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.16 - Modern UI
+          name: Extrator de Vídeos Windows v1.9.18 - Refino Visual Etapa 2
           body: |
-            Extrator de Vídeos Windows Portable v1.9.16 - Modern UI.
-            Nova navegação lateral moderna e acessível, tela de download reorganizada, identidade visual roxo/azul e novo ícone do aplicativo.
+            Extrator de Vídeos Windows Portable v1.9.18 - Refino Visual Etapa 2.
+            Tela principal refinada para ficar muito mais fiel à referência aprovada: menu lateral completo, análise do link, cards de informações/qualidade/resumo, painel visual direito e novo ícone.
             Timeline Premium, proxy, cortes precisos, união de vídeos, H.264/H.265 e compressão inteligente preservados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
+            ExtratorVideos-Windows-Portable-v1.9.18-REFINO-ETAPA2.zip
           fail_on_unmatched_files: true
           overwrite_files: true
