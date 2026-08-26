@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.18 Refino Etapa 2
+name: Build Windows Portable v1.9.18.1 Refino Etapa 2 Build Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.18-refino-etapa2
+      - v1.9.18.1-refino-etapa2-build-fix
 
 permissions:
   contents: write
@@ -113,22 +113,23 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.18-REFINO-ETAPA2.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.18.1-REFINO-ETAPA2-BUILD-FIX.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.18-refino-etapa2
+          tag_name: v1.9.18.1-refino-etapa2-build-fix
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.18 - Refino Visual Etapa 2
+          name: Extrator de Vídeos Windows v1.9.18.1 - Refino Visual Etapa 2 Build Fix
           body: |
-            Extrator de Vídeos Windows Portable v1.9.18 - Refino Visual Etapa 2.
+            Extrator de Vídeos Windows Portable v1.9.18.1 - Refino Visual Etapa 2 Build Fix.
             Tela principal refinada para ficar muito mais fiel à referência aprovada: menu lateral completo, análise do link, cards de informações/qualidade/resumo, painel visual direito e novo ícone.
+            Correção de inicialização do indicador de conexão/proxy na nova interface.
             Timeline Premium, proxy, cortes precisos, união de vídeos, H.264/H.265 e compressão inteligente preservados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.18-REFINO-ETAPA2.zip
+            ExtratorVideos-Windows-Portable-v1.9.18.1-REFINO-ETAPA2-BUILD-FIX.zip
           fail_on_unmatched_files: true
           overwrite_files: true
