@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.15 Timeline Premium
+name: Build Windows Portable v1.9.16 Modern UI
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.15-timeline-premium
+      - v1.9.16-modern-ui
 
 permissions:
   contents: write
@@ -54,31 +54,21 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
-
           $fontes = @(
             "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
             "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
           )
-
           $baixado = $false
           foreach ($url in $fontes) {
             Write-Host "Tentando fonte: $url"
-
             for ($tentativa = 1; $tentativa -le 4; $tentativa++) {
               try {
-                if (Test-Path "ffmpeg.zip") {
-                  Remove-Item "ffmpeg.zip" -Force
-                }
-
-                Write-Host "Tentativa ${tentativa}/4"
+                if (Test-Path "ffmpeg.zip") { Remove-Item "ffmpeg.zip" -Force }
                 Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
-
                 if ((Test-Path "ffmpeg.zip") -and ((Get-Item "ffmpeg.zip").Length -gt 1000000)) {
                   $baixado = $true
-                  Write-Host "Download concluido com sucesso."
                   break
                 }
-
                 throw "Arquivo baixado ausente ou muito pequeno."
               }
               catch {
@@ -86,74 +76,59 @@ jobs:
                 if ($tentativa -lt 4) { Start-Sleep -Seconds 8 }
               }
             }
-
             if ($baixado) { break }
           }
-
-          if (-not $baixado) {
-            throw "Nao foi possivel baixar o FFmpeg/FFprobe de nenhuma das fontes configuradas."
-          }
-
-          if (Test-Path "ffmpeg-temp") {
-            Remove-Item "ffmpeg-temp" -Recurse -Force
-          }
+          if (-not $baixado) { throw "Nao foi possivel baixar FFmpeg/FFprobe." }
+          if (Test-Path "ffmpeg-temp") { Remove-Item "ffmpeg-temp" -Recurse -Force }
           Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
-
           $ffmpeg = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
           $ffprobe = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
-
-          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado no pacote baixado" }
-          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado no pacote baixado" }
-
+          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado" }
+          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado" }
           Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
           Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
-
           & "bin/ffmpeg.exe" -version
-          if ($LASTEXITCODE -ne 0) { throw "ffmpeg.exe falhou no teste de versao (exit code $LASTEXITCODE)" }
-
           & "bin/ffprobe.exe" -version
-          if ($LASTEXITCODE -ne 0) { throw "ffprobe.exe falhou no teste de versao (exit code $LASTEXITCODE)" }
 
-          Write-Host "FFmpeg e FFprobe prontos."
-
-      - name: Verificar sintaxe
+      - name: Verificar icone e sintaxe
         shell: powershell
         run: |
-          python -m py_compile main.py novo_layout.py range_slider.py advanced_editor.py
+          if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
+          python -m py_compile main.py novo_layout.py modern_layout.py range_slider.py advanced_editor.py
 
-      - name: Gerar aplicativo com novo layout
+      - name: Gerar aplicativo Modern UI
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal novo_layout.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" modern_layout.py
 
       - name: Montar portable
         shell: powershell
         run: |
           Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
           Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
+          Copy-Item "ExtratorVideos-Icone.ico" "dist/ExtratorVideos/ExtratorVideos-Icone.ico" -Force
           New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
           if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip" -Force
 
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.15-TIMELINE-PREMIUM.zip" -Force
-
-
-      - name: Publicar ZIP no GitHub Releases
+      - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.15-timeline-premium
+          tag_name: v1.9.16-modern-ui
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.15 - Timeline Premium
+          name: Extrator de Vídeos Windows v1.9.16 - Modern UI
           body: |
-            Extrator de Vídeos Windows Portable v1.9.15 - Timeline Premium.
-            Botões redesenhados, controles de precisão integrados diretamente à timeline e fluxo visual alinhado ao Android. Motor, cortes, união e compressão inteligente preservados.
+            Extrator de Vídeos Windows Portable v1.9.16 - Modern UI.
+            Nova navegação lateral moderna e acessível, tela de download reorganizada, identidade visual roxo/azul e novo ícone do aplicativo.
+            Timeline Premium, proxy, cortes precisos, união de vídeos, H.264/H.265 e compressão inteligente preservados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.15-TIMELINE-PREMIUM.zip
+            ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
           fail_on_unmatched_files: true
           overwrite_files: true
