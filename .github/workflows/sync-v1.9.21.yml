@@ -1,0 +1,154 @@
+name: Sincronizar e Publicar Windows v1.9.21
+
+on:
+  push:
+    branches:
+      - sync-v1.9.21-source
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync-build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Aplicar exatamente a v1.9.21 anexada
+        shell: python
+        run: |
+          import base64
+          import re
+          import zlib
+          from pathlib import Path
+
+          def write_lf(path, text):
+              with open(path, 'w', encoding='utf-8', newline='\n') as f:
+                  f.write(text)
+
+          def payload(*names):
+              encoded = ''.join(Path('.sync', n).read_text(encoding='utf-8').strip() for n in names)
+              return zlib.decompress(base64.b64decode(encoded)).decode('utf-8')
+
+          timeline = payload('timeline.1.z')
+          live = payload('live.1.z', 'live.2.z')
+
+          p = Path('advanced_editor.py')
+          s = p.read_text(encoding='utf-8')
+          s, n = re.subn(
+              r'class TimelineWidget\(QWidget\):.*?(?=class SmartExportWorker\(QThread\):)',
+              lambda m: timeline,
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise RuntimeError('Bloco TimelineWidget não encontrado exatamente uma vez')
+          write_lf(p, s)
+
+          p = Path('main.py')
+          s = p.read_text(encoding='utf-8')
+          s, n = re.subn(
+              r"^APP_VERSION = .*?$",
+              "APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'",
+              s,
+              count=1,
+              flags=re.M,
+          )
+          if n != 1:
+              raise RuntimeError('APP_VERSION de main.py não encontrado')
+          write_lf(p, s)
+
+          p = Path('refined_layout.py')
+          s = p.read_text(encoding='utf-8')
+          if 'import urllib.parse' not in s:
+              s = s.replace('import urllib.request\n', 'import urllib.request\nimport urllib.parse\n', 1)
+          if 'import tempfile' not in s:
+              s = s.replace('import urllib.parse\n', 'import urllib.parse\nimport tempfile\n', 1)
+          s, n = re.subn(
+              r"^core\.APP_VERSION = .*?$",
+              "core.APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'",
+              s,
+              count=1,
+              flags=re.M,
+          )
+          if n != 1:
+              raise RuntimeError('APP_VERSION de refined_layout.py não encontrado')
+          s, n = re.subn(
+              r'class LiveSnapshotWorker\(QThread\):.*?(?=def _format_duration)',
+              lambda m: live,
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise RuntimeError('Bloco LiveSnapshotWorker não encontrado exatamente uma vez')
+          s, n = re.subn(
+              r"ver = QLabel\('v[^']*•[^']*'\)",
+              "ver = QLabel('v1.9.21  •  DRAG DIRETO + LIVE DVR')",
+              s,
+              count=1,
+          )
+          if n != 1:
+              raise RuntimeError('Rótulo visual da versão não encontrado')
+          write_lf(p, s)
+
+          readme = Path('.sync/LEIA-ME-target.txt').read_text(encoding='utf-8')
+          write_lf('LEIA-ME.txt', readme)
+          build = Path('.sync/build-target.yml').read_text(encoding='utf-8')
+          write_lf('.github/workflows/build-windows-portable.yml', build)
+
+      - name: Validar fontes e hashes da v1.9.21
+        shell: python
+        run: |
+          import hashlib
+          import py_compile
+          from pathlib import Path
+
+          expected = {
+              '.github/workflows/build-windows-portable.yml': 'ff569a54f17df3ae6272a4f466c1adb5c69900db',
+              'LEIA-ME.txt': 'e7d824aa47729f29b25f1592ed7fdd32114f4f38',
+              'advanced_editor.py': '24c723c9f40946d1c13de0b9e23e55a182581e2d',
+              'main.py': '225edd8a6b93c71121913cb3cf6bcfc0aa045441',
+              'refined_layout.py': 'c56958ac0b00b92d76c41e7bb79eb0da6682004b',
+          }
+          for name, wanted in expected.items():
+              data = Path(name).read_bytes()
+              actual = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+              print(f'{name}: {actual}')
+              if actual != wanted:
+                  raise RuntimeError(f'Hash divergente em {name}: esperado {wanted}, obtido {actual}')
+          for name in ('main.py','novo_layout.py','modern_layout.py','refined_layout.py','range_slider.py','advanced_editor.py'):
+              py_compile.compile(name, doraise=True)
+          print('VALIDAÇÃO V1.9.21 OK')
+
+      - name: Gravar v1.9.21 na main e fixar tag
+        shell: powershell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -r -f .sync
+          git rm -f .github/workflows/sync-v1.9.21.yml
+          git add advanced_editor.py main.py refined_layout.py LEIA-ME.txt .github/workflows/build-windows-portable.yml
+          git commit -m "Windows v1.9.21 - Timeline Drag Direto + Live DVR"
+          git push origin HEAD:main
+          git tag -f v1.9.21-timeline-drag-direto HEAD
+          git push origin -f refs/tags/v1.9.21-timeline-drag-direto
+
+      - name: Disparar build oficial na main
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build-windows-portable.yml --ref main
+          Write-Host "Workflow oficial v1.9.21 disparado na main."
