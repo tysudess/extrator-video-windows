@@ -122,12 +122,15 @@ jobs:
               'main.py': '225edd8a6b93c71121913cb3cf6bcfc0aa045441',
               'refined_layout.py': 'c56958ac0b00b92d76c41e7bb79eb0da6682004b',
           }
+          errors = []
           for name, wanted in expected.items():
               data = Path(name).read_bytes()
               actual = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
-              print(f'{name}: {actual}')
+              print(f'{name}: {actual} ({len(data)} bytes)')
               if actual != wanted:
-                  raise RuntimeError(f'Hash divergente em {name}: esperado {wanted}, obtido {actual}')
+                  errors.append(f'{name}: esperado {wanted}, obtido {actual}')
+          if errors:
+              raise RuntimeError('\n'.join(errors))
           for name in ('main.py','novo_layout.py','modern_layout.py','refined_layout.py','range_slider.py','advanced_editor.py'):
               py_compile.compile(name, doraise=True)
           print('VALIDAÇÃO V1.9.21 OK')
