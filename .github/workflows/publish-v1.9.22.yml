@@ -1,0 +1,141 @@
+name: Publicar Windows v1.9.22 Qualidades Reais + Globoplay
+
+on:
+  push:
+    branches:
+      - publish-v1.9.22
+    paths:
+      - .github/workflows/publish-v1.9.22.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    env:
+      PATCH_B64: H4sIAOuLkGoC/7Vc3W8bSXJ/11/Rt/cww+WHRVmSJXq1WNqSd5WzPixpvXfRCUST0yR7PR/0zFCW1jCwQIALAuRekkuQt2BzQA4XYJ8ueUmAvPA/2b8gf0Kqqntmer4oyvbuB0XOdFd3V1dV/6q6uh05HrN2eyJjxh+ImzjkcRAOrru7G93BaCpGrx48Pzjst48OOvFNzIb5IhvlImvSd8QNE4+cnY1N3unsOptic3fMuuvr25uba+12e4V21prN5iptffEFa3db26zZbXUfsi++WGsf/PrirH9xcsb2D9jLxe/3D07O2TeHx/sn35yz625nt7PRZT99/wd2cXh08Pzw+IDtn/W/ZPuHZwcXJ6zJnh++hEcvz9aadxPaIEIvvu4/P9zv7x+cs7OD/uE5EPny+cmTk9Pn/d+sMfi3eXzykgok1daabXbChkG8+GPA+sdQ/bx/xvgkCDnzggiGzKLAE34s2Os5d6XDHRGxUHBXPRwF/liGHnd4xGbCDdht3HbcWQfpHiNNcSOHAipEgTtf/GnxX1B7zN0IigM93wlYwCIJhHwsPA5CX4wE46/nwhX40wOWE7GnATS3+G+oAHMqo1ngL368Fm4LeuAB345YMAeKAtubCOYGE+k/4FEkfR7PYRCLPzOPhyMO9aFCiUgkPBaMRQiNhyyY5TpKzR8JdxqETDowajmWIw5FoMNALoqhhYg50Kj0X0X46Es3GAYzl9+2cOAzIWMaKfYSxjaPkYamoIhzP1782WOx9AQQETQmHoYcaIdQBXiHX4i/XjCPRIvtA3+QawGLxciFYbWYcGSMXQQ+TUJ6MguDG+jDV52N7c0H+LlF7JpBpyKaG/ZcXgsUMUZ8Xfw4kgHj0BeGDeEM40+Yd+jmGivITneNtVmfJAWY6sqZoLZlGDCfZ2OZBcCaCNgKRYj/Ihmamgumx9RBcudiMg8FPNISKSKY0xC5HAxDJYL4gM14CKOH59eLHx0BQ1UkBb7gjEOjkdQzJCLxLYinZiM0Q3rafdh6CJq6sd7qroOusgOt3S9hhoOo/Q3IR/Amap8GYcyHrmjTkLvb7aOT/YOz4/bXh53v5Ax7fHAjvJkb9GCI0K6L/IRBicWfQB6nix/Yere38aj3EDgPoj78VsTymsSGh6/n+BV4vb7eo/9Y+3OjOIokaFcs/TnMPcd54/6UBMkRs0BGxLAzQfxAyQeeh9yPPKkml8R58SeO0/sgEhOaTZTTyEEG69nugPZH81mg2am0V3ERlAEfa9GGcXFgCmmSuJmJUCJB7j5m3J3MPdBnLBPRdHtKm6GQJ2MJEhwBc7zACfQc05SjJNwAy1HLpjxE/vAZighxCHWEg3hf88TOeIk5YEenm/h7CLoNJNkBWIrjxd+cMG8O3aOuw9z5bsAdRr+xC05BoEE5gIUMeBWgcEqoI5FhvuIDdQ/kRY4kyimKP/zbv0D7+tf9xd9ic5UG94FhcEGz92mmkIMk/cAKL7WyOGLQUNBVr2Rrc/YSJzedGm1wQbrIjmWWOLNnUpmsF5m9RllKuIc1oEPyhnvYLw4MQquXN7IR9gzsiKSvYFWKFtYr2DHT1pL4SZ8axPolg6s7eGJOOEkMyjssAZya86ER6kWiyKAEIEkwGc6dMMEDWe3MbuuWbf1aw4ONjS3hODudzubO7ujhyFkBHiQElkCDpAiam43t1iPWpE/4OQ5BmEFVJ2IQwQyB+koPNZCd4bNzerSmSnHnmvsj4QwS464K9vVjslYH9Oob6UxEjIt8//R0cNw/OmB7zErMGnLvJZnKyFprY4mXB2fnhyfHWEgbO5YYuzw2Sez4fsgnbF+GAmSomS4cFmjFStQ0QMlk8kxw0Ixmtliyc1pJLRzDL1mfBaFDEiBGMuK0gqC90PYANEZEoDcIL4AgLoRAIpjHIN9jZRiQyiHqt7gGJSbRfbSxPkvUWsA078BPG8Qa6oU8AzgNEnnhT7gfqPVie2Or1e2yJv1FcAf6DBLP9rWh+SYIX4nQfnExBfVyGr01hv+MuXSFA0w5lxOfuzaoeEO9GeH05d7Bi7U2vnLEmA0G0pfxYGBHwh232DwEe0W9i28HJLN6bR/Amz3Lgvaa71m1pe3CAIqLEUgKPaPFJvcsGRL+A+sFjLXRSZtqGO+g1Q6QhoHBZ+F5rh9QwuM39nqLedK3XeHbz07OjvoX5w1YI7otxBJ2rkKjUWwnHQjQyr7D1FmWYkhasjBIKA9zYRefUs1GoWqBF7pq8amumu/fQE3zIMRFGtAJTvczwJSiWA46j6YNXh8Hfuktj2PAGPEAQC0Wubwikdzp7rZ2WHNwow==
+    steps:
+      - name: Checkout do main atual
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Aplicar patch validado da v1.9.22 e atualizar main
+        shell: powershell
+        run: |
+          python -c "import os,base64,gzip,pathlib; pathlib.Path('v1.9.22.patch').write_bytes(gzip.decompress(base64.b64decode(os.environ['PATCH_B64'])))"
+          git apply -p2 --index v1.9.22.patch
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py range_slider.py advanced_editor.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Windows v1.9.22 - Qualidades Reais + Globoplay"
+          git push origin HEAD:main
+          $sha = git rev-parse HEAD
+          "SOURCE_SHA=$sha" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias Python
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar pasta bin
+        shell: powershell
+        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
+
+      - name: Baixar yt-dlp NIGHTLY
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          & "bin/yt-dlp.exe" --version
+
+      - name: Baixar Deno
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
+          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
+          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
+          & "bin/deno.exe" --version
+
+      - name: Baixar FFmpeg e FFprobe
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $fontes = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+          $baixado = $false
+          foreach ($url in $fontes) {
+            Write-Host "Tentando fonte: $url"
+            for ($tentativa = 1; $tentativa -le 4; $tentativa++) {
+              try {
+                if (Test-Path "ffmpeg.zip") { Remove-Item "ffmpeg.zip" -Force }
+                Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+                if ((Test-Path "ffmpeg.zip") -and ((Get-Item "ffmpeg.zip").Length -gt 1000000)) { $baixado = $true; break }
+                throw "Arquivo baixado ausente ou muito pequeno."
+              }
+              catch {
+                Write-Warning "Falha na tentativa ${tentativa}: $($_.Exception.Message)"
+                if ($tentativa -lt 4) { Start-Sleep -Seconds 8 }
+              }
+            }
+            if ($baixado) { break }
+          }
+          if (-not $baixado) { throw "Nao foi possivel baixar FFmpeg/FFprobe." }
+          if (Test-Path "ffmpeg-temp") { Remove-Item "ffmpeg-temp" -Recurse -Force }
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
+          $ffmpeg = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado" }
+          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado" }
+          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
+          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
+
+      - name: Gerar aplicativo Modern UI
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout.py
+
+      - name: Montar portable
+        shell: powershell
+        run: |
+          Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
+          Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
+          Copy-Item "ExtratorVideos-Icone.ico" "dist/ExtratorVideos/ExtratorVideos-Icone.ico" -Force
+          New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
+          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip" -Force
+
+      - name: Publicar GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v1.9.22-qualidades-reais-globoplay
+          target_commitish: ${{ env.SOURCE_SHA }}
+          name: Extrator de Vídeos Windows v1.9.22 - Qualidades Reais + Globoplay Status
+          body: |
+            Extrator de Vídeos Windows Portable v1.9.22 - Qualidades Reais + Globoplay Status.
+            Mantém timeline com arrastar e soltar pelo mouse, Delete no teclado, editor integrado, proxy, H.264/H.265, compressão e Live DVR do início até o momento atual.
+            O botão ANALISAR mostra somente resoluções realmente confirmadas pelo yt-dlp.
+            Conteúdo indisponível, protegido por DRM ou que exige login/assinatura é marcado como indisponível, sem opções falsas.
+          prerelease: false
+          make_latest: true
+          files: |
+            ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip
+          fail_on_unmatched_files: true
+          overwrite_files: true
