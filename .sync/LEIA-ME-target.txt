@@ -1,0 +1,115 @@
+EXTRATOR DE VÍDEOS WINDOWS v1.9.21 — TIMELINE DRAG DIRETO + LIVE DVR
+
+
+NOVIDADE v1.9.21
+- Agora o clipe inteiro na timeline pode ser clicado e arrastado com o mouse.
+- Segure o botão esquerdo sobre qualquer parte do vídeo, arraste para a posição desejada e solte.
+- A posição de destino fica destacada antes de soltar.
+- Clique simples continua selecionando o clipe e posicionando o cursor.
+- Mantém Delete no teclado, cortes, união interna, exportação e Live DVR snapshot.
+NOVIDADE v1.9.20.2
+- Para lives do YouTube com DVR, o método principal não depende mais de --download-sections.
+- Ao clicar em BAIXAR DO INÍCIO ATÉ AGORA, o app congela a playlist HLS/DVR disponível naquele instante.
+- O arquivo local recebe #EXT-X-ENDLIST, então novos segmentos da transmissão não são acompanhados.
+- O FFmpeg baixa somente a janela congelada e finaliza em MP4.
+- Se a janela DVR não contiver mais o início (por exemplo em lives muito longas), o app informa isso e ainda tenta o modo compatível do yt-dlp.
+
+EXTRATOR DE VÍDEOS — WINDOWS PORTABLE v1.9.16
+MODERN UI • TIMELINE PREMIUM • COMPRESSÃO INTELIGENTE
+
+BASE PRESERVADA
+Esta versão parte da v1.9.15 TIMELINE PREMIUM. O motor funcional de download, proxy, edição, união e exportação foi preservado; a principal mudança é a nova interface visual e o novo ícone do aplicativo.
+
+NOVA INTERFACE MODERNA
+- Navegação lateral fixa: Baixar / Editor Timeline / Proxy.
+- Cabeçalho com título da página e status da conexão.
+- Tela de download reorganizada em cards.
+- Botões maiores e melhor espaçamento para uso com mouse/touchpad.
+- Foco visual mais claro, contraste elevado e textos auxiliares.
+- Tema escuro roxo/azul/ciano alinhado ao preview aprovado.
+- Novo ícone embutido no ExtratorVideos.exe.
+
+DOWNLOAD / YOUTUBE / PROXY
+- Download por link.
+- YouTube e sites compatíveis com yt-dlp.
+- Qualidades 360p, 480p, 720p, 1080p e melhor disponível.
+- yt-dlp NIGHTLY e Deno.
+- Conexão direta ou proxy.
+- Senha do proxy não é gravada.
+- Diagnóstico do yt-dlp quando necessário.
+
+EDITOR / TIMELINE PREMIUM
+- Timeline unificada para 1 ou mais vídeos.
+- Miniaturas reais geradas pelo FFmpeg.
+- Linha de reprodução global.
+- Cortar no cursor com tesourinha.
+- Excluir, duplicar e reordenar trechos.
+- Prévia contínua da sequência.
+- Zoom da timeline.
+- Ajustes ±1s, ±100ms e ±10ms.
+- Marcar início/fim com precisão de milissegundos.
+- Campos HH:MM:SS.mmm.
+
+EXPORTAÇÃO / COMPRESSÃO
+- Resolução Original, 360p, 480p, 720p ou 1080p.
+- H.264 / AVC.
+- H.265 / HEVC para maior compressão.
+- Fallback automático para H.264 quando necessário.
+- Áudio AAC.
+- Controle opcional de tamanho aproximado.
+- Originais preservados.
+
+BUILD LOCAL
+Execute build_windows.bat depois de colocar em bin:
+- yt-dlp.exe
+- ffmpeg.exe
+- ffprobe.exe
+- deno.exe
+
+BUILD GITHUB ACTIONS
+O workflow baixa automaticamente os binários, gera o EXE com o novo ícone, monta o portable e publica o ZIP diretamente em GitHub Releases.
+
+ARQUIVO FINAL
+ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
+
+=== v1.9.17 — REFINO VISUAL ETAPA 1 ===
+- Tela principal redesenhada para se aproximar da referência aprovada.
+- Menu lateral: Início, Download, Editor, Unir Vídeos, Histórico e Configurações.
+- Botão ANALISAR com leitura real de metadados pelo yt-dlp.
+- Qualidades: 2160p, 1440p, 1080p, 720p, 480p e 360p.
+- Cards de informações do vídeo, escolha de qualidade e resumo do download.
+- Painel direito com identidade do novo design e visualização do ícone.
+- Motor de download, proxy, Timeline Premium, H.264/H.265 e união preservados.
+
+
+=== v1.9.18 — REFINO VISUAL ETAPA 2 ===
+- Editor/Timeline redesenhado para ficar muito mais fiel à referência aprovada.
+- Preview de vídeo ampliado.
+- Painel Marcação rápida à direita com Início, Fim e Duração.
+- Timeline compacta com zoom, cursor e range do clipe selecionado.
+- Ajustes −1s / −100ms / −10ms / +10ms / +100ms / +1s posicionados abaixo da timeline.
+- Botões Cortar, Excluir trecho, Duplicar, Esquerda e Direita reorganizados.
+- Exportação compacta com nome, resolução, H.264/H.265, tamanho alvo e botão EXPORTAR destacado.
+- Motor de edição, cortes, união, preview e compressão preservado.
+
+=== v1.9.18.1 — BUILD FIX ===
+- Corrige falha na inicialização da interface refinada: connection_badge agora é criado antes da carga da configuração de proxy.
+- Adicionada proteção defensiva no motor para não encerrar o programa caso um layout futuro não possua o selo visual de conexão.
+- Todo o layout e as funções da Etapa 2 foram preservados.
+
+
+=== v1.9.19 — TIMELINE REORDER + DELETE ===
+- Clique e arraste qualquer parte do vídeo na timeline para mudar sua ordem; solte na posição desejada.
+- Tecla Delete remove o clipe/trecho selecionado (não dispara enquanto edita campos de texto).
+- Botões Esquerda/Direita continuam disponíveis como alternativa.
+- Item Unir Vídeos removido do menu lateral; a união continua dentro do Editor/Timeline.
+- Todo o visual e recursos da v1.9.18.1 foram preservados.
+
+
+=== v1.9.20 — LIVE DO INÍCIO ATÉ AGORA ===
+- Ao analisar um link do YouTube que esteja AO VIVO, o aplicativo mostra o selo vermelho AO VIVO.
+- O botão muda para: BAIXAR DO INÍCIO ATÉ AGORA.
+- No momento em que você clica em baixar, o app consulta a live novamente e congela o ponto final.
+- Exemplo: se a live começou há 01:27:35, o objetivo do arquivo é 00:00:00 -> 01:27:35, sem continuar acompanhando depois.
+- Requer que a transmissão ofereça DVR/segmentos desde o início. O suporte do yt-dlp para recortes de live ainda é experimental; algumas lives podem não permitir esse modo.
+- Se o modo exato falhar, o aplicativo tenta novamente com formato MP4 combinado. Ele NÃO muda para download a partir do momento atual, pois isso seria diferente do modo solicitado.
