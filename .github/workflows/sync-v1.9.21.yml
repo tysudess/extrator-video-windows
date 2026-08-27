@@ -40,21 +40,9 @@ jobs:
               encoded = ''.join(Path('.sync', n).read_text(encoding='utf-8').strip() for n in names)
               return zlib.decompress(base64.b64decode(encoded)).decode('utf-8')
 
-          timeline = payload('timeline.1.z')
+          advanced = payload('advanced.1.z', 'advanced.2.z', 'advanced.3.z', 'advanced.4.z', 'advanced.5.z', 'advanced.6.z', 'advanced.7.z')
           live = payload('live.1.z', 'live.2.z')
-
-          p = Path('advanced_editor.py')
-          s = p.read_text(encoding='utf-8')
-          s, n = re.subn(
-              r'class TimelineWidget\(QWidget\):.*?(?=class SmartExportWorker\(QThread\):)',
-              lambda m: timeline,
-              s,
-              count=1,
-              flags=re.S,
-          )
-          if n != 1:
-              raise RuntimeError('Bloco TimelineWidget não encontrado exatamente uma vez')
-          write_lf(p, s)
+          write_lf('advanced_editor.py', advanced)
 
           p = Path('main.py')
           s = p.read_text(encoding='utf-8')
