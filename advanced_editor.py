@@ -316,11 +316,12 @@ class TimelineWidget(QWidget):
         self.min_clip_w = 100
         self.thumb_cache = {}
         self.dragging_playhead = False
-        self.drag_candidate_index = -1
+        self.drag_source_index = -1
+        self.drag_target_index = -1
         self.drag_reordering = False
         self.drag_press_x = 0.0
-        self.drag_header_only = False
-        self.setToolTip('Clique para posicionar o cursor. Arraste o cabeçalho do clipe para mudar a ordem.')
+        self.drag_press_y = 0.0
+        self.setToolTip('Clique para posicionar o cursor. Clique e arraste qualquer parte do vídeo para mudar sua posição na timeline.')
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumHeight(146)
         self.setMouseTracking(True)
@@ -474,9 +475,15 @@ class TimelineWidget(QWidget):
             title = metrics.elidedText(f'{idx + 1}. {title}', Qt.TextElideMode.ElideRight, max(20, int(rect.width() - 14)))
             painter.setPen(pal.text().color())
             painter.drawText(label_rect.adjusted(7, 0, -30, 0), Qt.AlignmentFlag.AlignVCenter, title)
-            # Alça visual para reordenar diretamente na timeline.
+            # Indicação visual: o clipe inteiro pode ser arrastado com o mouse.
             painter.setPen(pal.midlight().color())
             painter.drawText(label_rect.adjusted(rect.width() - 28, 0, -6, 0), Qt.AlignmentFlag.AlignCenter, '≡')
+
+            if self.drag_reordering and idx == self.drag_target_index:
+                target_pen = QPen(pal.highlight().color(), 4, Qt.PenStyle.DashLine)
+                painter.setPen(target_pen)
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawRoundedRect(rect.adjusted(2, 2, -2, -2), 8, 8)
 
             pen = QPen(pal.highlight().color() if idx == self.selected_index else pal.mid().color(), 3 if idx == self.selected_index else 1)
             painter.setPen(pen)
@@ -502,62 +509,95 @@ class TimelineWidget(QWidget):
         self.setFocus(Qt.FocusReason.MouseFocusReason)
         x = event.position().x()
         y = event.position().y()
-        playhead_x = self._x_for_global(self.playhead_ms)
-        self.dragging_playhead = abs(x - playhead_x) <= 12
         idx = self._clip_index_for_x(x)
-        if idx >= 0 and idx != self.selected_index:
-            self.selected_index = idx
-            self.clipSelected.emit(idx)
 
-        # Arrastar pelo cabeçalho do clipe muda a ordem. Na área das miniaturas,
-        # o arrasto continua movendo o cursor normalmente.
-        self.drag_candidate_index = idx
-        self.drag_press_x = x
-        self.drag_header_only = self.clip_top <= y <= self.clip_top + 26
-        self.drag_reordering = False
-        if self.drag_header_only:
+        # Dentro da faixa dos clipes, qualquer ponto do vídeo vira uma área de
+        # arraste. Um clique simples continua posicionando o cursor; só após
+        # alguns pixels de movimento entramos no modo de reordenação.
+        inside_clip_band = self.clip_top <= y <= self.clip_top + self.clip_h
+        if inside_clip_band and idx >= 0:
+            if idx != self.selected_index:
+                self.selected_index = idx
+                self.clipSelected.emit(idx)
+            self.drag_source_index = idx
+            self.drag_target_index = idx
+            self.drag_press_x = x
+            self.drag_press_y = y
+            self.drag_reordering = False
             self.setCursor(Qt.CursorShape.OpenHandCursor)
         else:
+            self.drag_source_index = -1
+            self.drag_target_index = -1
+            self.drag_reordering = False
             self._move_playhead_from_x(x, False)
         event.accept()
 
     def mouseMoveEvent(self, event):
-        if not (event.buttons() & Qt.MouseButton.LeftButton):
-            return
         x = event.position().x()
-        if self.drag_header_only and self.drag_candidate_index >= 0:
-            if not self.drag_reordering and abs(x - self.drag_press_x) >= 8:
+        y = event.position().y()
+
+        if not (event.buttons() & Qt.MouseButton.LeftButton):
+            if self.clips and self.clip_top <= y <= self.clip_top + self.clip_h:
+                self.setCursor(Qt.CursorShape.OpenHandCursor)
+            else:
+                self.unsetCursor()
+            return
+
+        if self.drag_source_index >= 0:
+            dx = abs(x - self.drag_press_x)
+            dy = abs(y - self.drag_press_y)
+            if not self.drag_reordering and max(dx, dy) >= 8:
                 self.drag_reordering = True
                 self.setCursor(Qt.CursorShape.ClosedHandCursor)
+
             if self.drag_reordering:
                 target = self._clip_index_for_x(x)
-                if target >= 0 and target != self.drag_candidate_index:
-                    source = self.drag_candidate_index
-                    self.drag_candidate_index = target
-                    self.reorderRequested.emit(source, target)
-                    self.selected_index = target
+                if target >= 0 and target != self.drag_target_index:
+                    self.drag_target_index = target
                     self.update()
                 event.accept()
                 return
+
+            # Ainda é apenas um clique potencial. Não mexemos no playhead antes
+            # de saber se o usuário pretende arrastar o vídeo.
+            event.accept()
+            return
+
         self._move_playhead_from_x(x, False)
         event.accept()
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and self.clips:
-            if not self.drag_reordering and not self.drag_header_only:
-                self._move_playhead_from_x(event.position().x(), True)
-            elif not self.drag_reordering and self.drag_header_only:
-                # Clique no cabeçalho: apenas seleciona o clipe, sem deslocar o playhead.
-                idx = self._clip_index_for_x(event.position().x())
-                if idx >= 0 and idx != self.selected_index:
-                    self.selected_index = idx
-                    self.clipSelected.emit(idx)
-            self.dragging_playhead = False
-            self.drag_reordering = False
-            self.drag_header_only = False
-            self.drag_candidate_index = -1
-            self.unsetCursor()
+        if event.button() != Qt.MouseButton.LeftButton or not self.clips:
+            return
+
+        x = event.position().x()
+        source = self.drag_source_index
+        target = self.drag_target_index
+        was_reordering = self.drag_reordering
+
+        self.drag_source_index = -1
+        self.drag_target_index = -1
+        self.drag_reordering = False
+        self.unsetCursor()
+
+        if was_reordering and source >= 0 and target >= 0:
+            if source != target:
+                self.reorderRequested.emit(source, target)
+            else:
+                self.selected_index = source
+                self.clipSelected.emit(source)
+            self.update()
             event.accept()
+            return
+
+        # Clique simples no vídeo: seleciona e posiciona o cursor normalmente.
+        self._move_playhead_from_x(x, True)
+        event.accept()
+
+    def leaveEvent(self, event):
+        if not self.drag_reordering:
+            self.unsetCursor()
+        super().leaveEvent(event)
 
     def _move_playhead_from_x(self, x, finished):
         self.playhead_ms = self._global_for_x(x)
@@ -894,7 +934,7 @@ class AdvancedVideoEditorWidget(QWidget):
         timeline_card = QWidget(); timeline_card.setStyleSheet(card_css)
         tl = QVBoxLayout(timeline_card); tl.setContentsMargins(12, 12, 12, 12); tl.setSpacing(8)
         timeline_head = QHBoxLayout(); timeline_head.setSpacing(8)
-        label_tl = QLabel('TIMELINE  •  arraste o cabeçalho do clipe para reordenar')
+        label_tl = QLabel('TIMELINE  •  arraste o próprio vídeo com o mouse para reordenar')
         label_tl.setStyleSheet('color:#ffffff; font-weight:800; letter-spacing:1px; background:transparent; border:none;')
         self.clip_count = QLabel('0 clipes • 00:00')
         self.clip_count.setStyleSheet('color:#96a6c4; background:transparent; border:none;')

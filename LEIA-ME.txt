@@ -1,3 +1,19 @@
+EXTRATOR DE VÍDEOS WINDOWS v1.9.21 — TIMELINE DRAG DIRETO + LIVE DVR
+
+
+NOVIDADE v1.9.21
+- Agora o clipe inteiro na timeline pode ser clicado e arrastado com o mouse.
+- Segure o botão esquerdo sobre qualquer parte do vídeo, arraste para a posição desejada e solte.
+- A posição de destino fica destacada antes de soltar.
+- Clique simples continua selecionando o clipe e posicionando o cursor.
+- Mantém Delete no teclado, cortes, união interna, exportação e Live DVR snapshot.
+NOVIDADE v1.9.20.2
+- Para lives do YouTube com DVR, o método principal não depende mais de --download-sections.
+- Ao clicar em BAIXAR DO INÍCIO ATÉ AGORA, o app congela a playlist HLS/DVR disponível naquele instante.
+- O arquivo local recebe #EXT-X-ENDLIST, então novos segmentos da transmissão não são acompanhados.
+- O FFmpeg baixa somente a janela congelada e finaliza em MP4.
+- Se a janela DVR não contiver mais o início (por exemplo em lives muito longas), o app informa isso e ainda tenta o modo compatível do yt-dlp.
+
 EXTRATOR DE VÍDEOS — WINDOWS PORTABLE v1.9.16
 MODERN UI • TIMELINE PREMIUM • COMPRESSÃO INTELIGENTE
 
@@ -83,7 +99,7 @@ ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
 
 
 === v1.9.19 — TIMELINE REORDER + DELETE ===
-- Arraste o cabeçalho de qualquer clipe na timeline para mudar sua ordem.
+- Clique e arraste qualquer parte do vídeo na timeline para mudar sua ordem; solte na posição desejada.
 - Tecla Delete remove o clipe/trecho selecionado (não dispara enquanto edita campos de texto).
 - Botões Esquerda/Direita continuam disponíveis como alternativa.
 - Item Unir Vídeos removido do menu lateral; a união continua dentro do Editor/Timeline.

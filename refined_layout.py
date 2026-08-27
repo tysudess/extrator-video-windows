@@ -5,6 +5,8 @@ import subprocess
 import sys
 import time
 import urllib.request
+import urllib.parse
+import tempfile
 from pathlib import Path
 
 import main as core
@@ -19,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-core.APP_VERSION = 'Windows Portable v1.9.20.1 — Live format fix'
+core.APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'
 
 # A referência visual usa seis níveis explícitos. O motor passa a suportá-los de verdade.
 core.QUALIDADES = (
@@ -333,6 +335,256 @@ class LiveSnapshotWorker(QThread):
         m, s = divmod(rem, 60)
         return f'{h:02d}:{m:02d}:{s:02d}'
 
+    def _urlopen(self, url, headers=None, timeout=45):
+        req = urllib.request.Request(url, headers=headers or {})
+        if self.proxy_url:
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({'http': self.proxy_url, 'https': self.proxy_url}))
+            return opener.open(req, timeout=timeout)
+        return urllib.request.urlopen(req, timeout=timeout)
+
+    @staticmethod
+    def _safe_name(text):
+        text = re.sub(r'[<>:"/\\|?*\\x00-\\x1f]', '_', str(text or 'Live YouTube')).strip(' .')
+        return (text[:145] or 'Live YouTube')
+
+    @staticmethod
+    def _format_has_av(fmt):
+        return str(fmt.get('vcodec') or 'none') != 'none' and str(fmt.get('acodec') or 'none') != 'none'
+
+    def _select_hls_format(self, data, wanted_height):
+        """Escolhe uma variante HLS muxada sem usar --live-from-start.
+
+        O URL de uma variante HLS representa a janela DVR que o player do YouTube
+        consegue rebobinar. Vamos congelar essa janela em um arquivo m3u8 local,
+        impedindo que o FFmpeg continue acompanhando a transmissão.
+        """
+        candidates = []
+        for fmt in (data.get('formats') or []):
+            url = str(fmt.get('url') or '')
+            proto = str(fmt.get('protocol') or '').lower()
+            if not url:
+                continue
+            if 'm3u8' not in proto and '.m3u8' not in url.lower() and 'manifest/hls' not in url.lower():
+                continue
+            if not self._format_has_av(fmt):
+                continue
+            try:
+                h = int(float(fmt.get('height') or 0))
+            except Exception:
+                h = 0
+            try:
+                tbr = float(fmt.get('tbr') or 0)
+            except Exception:
+                tbr = 0.0
+            # Primeiro prefere <= altura solicitada. Se não houver, aceita a mais próxima.
+            over = 1 if (h and h > wanted_height) else 0
+            distance = abs((h or wanted_height) - wanted_height)
+            candidates.append((over, distance, -h, -tbr, fmt))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda x: x[:4])
+        return candidates[0][4]
+
+    @staticmethod
+    def _rewrite_uri_attributes(line, base_url):
+        def repl(match):
+            raw = match.group(1)
+            return 'URI="' + urllib.parse.urljoin(base_url, raw) + '"'
+        return re.sub(r'URI="([^"]+)"', repl, line)
+
+    def _freeze_media_playlist(self, playlist_url, headers, target_seconds):
+        """Baixa uma única fotografia do m3u8 e transforma em playlist VOD local."""
+        with self._urlopen(playlist_url, headers=headers, timeout=45) as resp:
+            raw = resp.read().decode('utf-8', 'replace')
+        if '#EXTM3U' not in raw:
+            raise RuntimeError('O YouTube não retornou uma playlist HLS válida para esta live.')
+
+        # Caso recebamos master playlist por alguma variação do extractor, escolhemos
+        # a primeira variante. Normalmente o yt-dlp já fornece a media playlist.
+        lines = raw.splitlines()
+        if any('#EXT-X-STREAM-INF' in ln for ln in lines):
+            variant = None
+            for i, ln in enumerate(lines):
+                if ln.startswith('#EXT-X-STREAM-INF'):
+                    for j in range(i + 1, min(i + 4, len(lines))):
+                        cand = lines[j].strip()
+                        if cand and not cand.startswith('#'):
+                            variant = urllib.parse.urljoin(playlist_url, cand)
+                            break
+                    if variant:
+                        break
+            if not variant:
+                raise RuntimeError('Não foi possível localizar a variante HLS da live.')
+            playlist_url = variant
+            with self._urlopen(playlist_url, headers=headers, timeout=45) as resp:
+                raw = resp.read().decode('utf-8', 'replace')
+            lines = raw.splitlines()
+
+        total = 0.0
+        for ln in lines:
+            if ln.startswith('#EXTINF:'):
+                try:
+                    total += float(ln.split(':', 1)[1].split(',', 1)[0])
+                except Exception:
+                    pass
+
+        # O timestamp de início do YouTube pode divergir alguns segundos do primeiro
+        # segmento. Uma diferença grande indica que a janela DVR já perdeu o começo.
+        tolerance = max(90.0, min(300.0, target_seconds * 0.04))
+        if total <= 0:
+            raise RuntimeError('A playlist DVR não informou a duração dos segmentos.')
+        if total + tolerance < target_seconds:
+            raise RuntimeError(
+                f'A janela DVR disponível contém cerca de {self._time_arg(int(total))}, '
+                f'mas a live já tem aproximadamente {self._time_arg(target_seconds)}. '
+                'O início não está mais disponível nessa janela HLS.'
+            )
+
+        base = playlist_url
+        frozen = []
+        for ln in lines:
+            stripped = ln.strip()
+            if not stripped:
+                frozen.append(ln)
+                continue
+            if stripped.startswith('#'):
+                frozen.append(self._rewrite_uri_attributes(ln, base))
+            else:
+                frozen.append(urllib.parse.urljoin(base, stripped))
+        # Marca como encerrada localmente: o FFmpeg NÃO recarrega a playlist e,
+        # portanto, não acompanha novos segmentos que aparecerem no YouTube.
+        if not any(ln.startswith('#EXT-X-ENDLIST') for ln in frozen):
+            frozen.append('#EXT-X-ENDLIST')
+
+        tmp_dir = Path(tempfile.mkdtemp(prefix='extrator-live-'))
+        local_m3u8 = tmp_dir / 'snapshot.m3u8'
+        local_m3u8.write_text('\n'.join(frozen) + '\n', encoding='utf-8')
+        return local_m3u8, total, tmp_dir
+
+    def _run_hls_snapshot(self, target_seconds, data):
+        """Método principal v1.9.20.2: congela o DVR e baixa a janela congelada."""
+        heights = [2160, 1440, 1080, 720, 480, 360]
+        wanted = heights[self.quality_index]
+        fmt = self._select_hls_format(data, wanted)
+        if not fmt:
+            return False, '', 'Nenhuma variante HLS muxada com áudio e vídeo foi encontrada para congelar o DVR.'
+
+        actual_h = int(float(fmt.get('height') or 0) or 0)
+        headers = dict(fmt.get('http_headers') or {})
+        headers.setdefault('User-Agent', 'Mozilla/5.0')
+        headers.setdefault('Referer', 'https://www.youtube.com/')
+        self.message.emit(f'🔴 Congelando a janela DVR em {actual_h or wanted}p…')
+
+        local_m3u8 = None
+        tmp_dir = None
+        try:
+            local_m3u8, playlist_duration, tmp_dir = self._freeze_media_playlist(
+                str(fmt.get('url')), headers, target_seconds
+            )
+            self.message.emit(
+                f'Janela DVR congelada: ~{self._time_arg(int(playlist_duration))}. '
+                'Novos minutos da live não serão adicionados.'
+            )
+            title = self._safe_name(data.get('title') or 'Live YouTube')
+            vid = self._safe_name(data.get('id') or 'live')
+            stamp = time.strftime('%Y%m%d-%H%M%S')
+            out_path = core.VIDEOS_DIR / f'{title} [LIVE-ATE-AGORA {stamp}] [{vid}].mp4'
+            # Evita colisão rara de nomes.
+            n = 2
+            while out_path.exists():
+                out_path = core.VIDEOS_DIR / f'{title} [LIVE-ATE-AGORA {stamp}-{n}] [{vid}].mp4'
+                n += 1
+
+            header_blob = ''.join(f'{k}: {v}\\r\\n' for k, v in headers.items())
+            cmd = [
+                str(core.FFMPEG_EXE), '-y', '-hide_banner', '-loglevel', 'warning',
+                '-protocol_whitelist', 'file,http,https,tcp,tls,crypto',
+            ]
+            if header_blob:
+                cmd += ['-headers', header_blob]
+            cmd += [
+                '-i', str(local_m3u8), '-t', str(max(1, int(target_seconds))),
+                '-map', '0:v:0?', '-map', '0:a:0?', '-c', 'copy',
+                '-movflags', '+faststart', '-progress', 'pipe:1', '-nostats', str(out_path)
+            ]
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            env = os.environ.copy()
+            if self.proxy_url:
+                env['http_proxy'] = self.proxy_url
+                env['https_proxy'] = self.proxy_url
+            self._process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                encoding='utf-8', errors='replace', creationflags=flags, env=env
+            )
+            tail = []
+            assert self._process.stdout is not None
+            for raw_line in self._process.stdout:
+                if self._cancel_requested:
+                    try: self._process.terminate()
+                    except Exception: pass
+                    return False, '', 'Download cancelado.'
+                line = raw_line.strip()
+                if line:
+                    tail.append(line); tail = tail[-80:]
+                m = re.match(r'out_time_(?:ms|us)=(\d+)', line)
+                if m:
+                    # ffmpeg chama esse campo de *_ms em algumas versões embora a
+                    # unidade prática seja microssegundos; ambos são tratados igual.
+                    sec = int(m.group(1)) / 1_000_000.0
+                    self.progress.emit(max(1, min(99, int(sec * 100 / max(1, target_seconds)))))
+            code = self._process.wait(); self._process = None
+            if code == 0 and out_path.exists() and out_path.stat().st_size > 1024:
+                return True, str(out_path), ''
+
+            # Alguns HLS usam codecs que não podem ser apenas remuxados para MP4.
+            # Nesse caso fazemos uma segunda passagem transcodificando para H.264/AAC.
+            out_path.unlink(missing_ok=True)
+            self.message.emit('Remux direto não funcionou; tentando H.264/AAC…')
+            cmd2 = [
+                str(core.FFMPEG_EXE), '-y', '-hide_banner', '-loglevel', 'warning',
+                '-protocol_whitelist', 'file,http,https,tcp,tls,crypto',
+            ]
+            if header_blob:
+                cmd2 += ['-headers', header_blob]
+            cmd2 += [
+                '-i', str(local_m3u8), '-t', str(max(1, int(target_seconds))),
+                '-map', '0:v:0?', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast',
+                '-crf', '20', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k',
+                '-movflags', '+faststart', '-progress', 'pipe:1', '-nostats', str(out_path)
+            ]
+            self._process = subprocess.Popen(
+                cmd2, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                encoding='utf-8', errors='replace', creationflags=flags, env=env
+            )
+            tail2 = []
+            assert self._process.stdout is not None
+            for raw_line in self._process.stdout:
+                if self._cancel_requested:
+                    try: self._process.terminate()
+                    except Exception: pass
+                    return False, '', 'Download cancelado.'
+                line = raw_line.strip()
+                if line:
+                    tail2.append(line); tail2 = tail2[-80:]
+                m = re.match(r'out_time_(?:ms|us)=(\d+)', line)
+                if m:
+                    sec = int(m.group(1)) / 1_000_000.0
+                    self.progress.emit(max(1, min(99, int(sec * 100 / max(1, target_seconds)))))
+            code2 = self._process.wait(); self._process = None
+            if code2 == 0 and out_path.exists() and out_path.stat().st_size > 1024:
+                return True, str(out_path), ''
+            out_path.unlink(missing_ok=True)
+            return False, '', '\n'.join((tail + tail2)[-80:]) or 'FFmpeg não conseguiu processar a playlist DVR congelada.'
+        except Exception as exc:
+            return False, '', str(exc)
+        finally:
+            try:
+                if tmp_dir and tmp_dir.exists():
+                    import shutil
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+            except Exception:
+                pass
+
     def _run_attempt(self, fmt, target_seconds, label):
         self.message.emit(label)
         stamp = time.strftime('%Y%m%d-%H%M%S')
@@ -424,35 +676,37 @@ class LiveSnapshotWorker(QThread):
             self.message.emit('🔴 Confirmando a live e congelando o ponto final…')
             target, _data = self._refresh_target()
             self.message.emit(f'🔴 LIVE: baixar 00:00:00 → {self._time_arg(target)}. A transmissão continuará, mas o arquivo parará nesse ponto.')
-            # Para live, não prendemos a captura a ext=mp4/m4a. O YouTube pode
-            # expor apenas HLS/DASH naquele momento; a conversão para MP4/H.264
-            # acontece depois. Cada tentativa respeita a altura escolhida.
-            heights = [2160, 1440, 1080, 720, 480, 360]
-            height = heights[self.quality_index]
-            attempts = [
-                (f'bv*[height<={height}]+ba/b[height<={height}]/b',
-                 f'Baixando LIVE até {height}p desde o início…'),
-                (f'bestvideo[height<={height}]+bestaudio/best[height<={height}]/best',
-                 f'Tentando formato alternativo LIVE até {height}p…'),
-                (f'best[height<={height}]/best',
-                 f'Tentando formato combinado LIVE até {height}p…'),
-            ]
-            ok = False; path = ''; err = ''
-            for fmt, label in attempts:
-                if self._cancel_requested:
-                    break
-                ok, path, current_err = self._run_attempt(fmt, target, label)
-                if ok:
-                    break
-                if current_err:
-                    err = current_err
+
+            # Método principal: congela a playlist HLS/DVR no instante do clique.
+            # Isso evita a combinação problemática --live-from-start + --download-sections.
+            ok, path, err = self._run_hls_snapshot(target, _data)
+
+            # Fallback legado apenas se a live não expuser uma janela HLS DVR completa.
+            if not ok and not self._cancel_requested:
+                self.message.emit('O snapshot HLS não ficou disponível. Tentando modo compatível do yt-dlp…')
+                heights = [2160, 1440, 1080, 720, 480, 360]
+                height = heights[self.quality_index]
+                attempts = [
+                    (f'b[height<={height}]/b', f'Tentando LIVE compatível até {height}p…'),
+                    ('b', 'Tentando melhor formato LIVE disponível…'),
+                ]
+                legacy_errors = [err] if err else []
+                for fmt, label in attempts:
+                    if self._cancel_requested:
+                        break
+                    ok, path, current_err = self._run_attempt(fmt, target, label)
+                    if ok:
+                        break
+                    if current_err:
+                        legacy_errors.append(current_err)
+                if legacy_errors:
+                    err = '\n\n'.join(legacy_errors[-3:])
             if self._cancel_requested:
                 self.canceled.emit(); return
             if not ok:
                 low = (err or '').lower()
                 if 'requested format is not available' in low:
-                    reason = ('A live possui DVR, mas o YouTube não ofereceu um formato compatível com a qualidade escolhida durante a captura. '
-                              'Tente uma qualidade menor ou atualize o yt-dlp.')
+                    reason = ('A live possui DVR, mas nem a janela HLS congelada nem o modo compatível do yt-dlp conseguiram recuperar o início. '                               'Isso pode ocorrer quando a janela DVR já não contém o começo da transmissão.')
                 else:
                     reason = ('Não foi possível recortar esta live do início até agora. Algumas transmissões não expõem DVR/range compatível para o yt-dlp.')
                 raise RuntimeError(reason + '\n\n' + (err[-1800:] if err else ''))
@@ -536,7 +790,7 @@ def build_refined_ui(self):
     btn_theme = QPushButton('☾'); btn_theme.setObjectName('RefinedSmallButton'); btn_theme.setToolTip('Tema escuro')
     mini.addWidget(btn_sidebar_folder); mini.addWidget(btn_help); mini.addWidget(btn_theme)
     sb.addLayout(mini)
-    ver = QLabel('v1.9.20.1  •  LIVE + TIMELINE'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    ver = QLabel('v1.9.21  •  DRAG DIRETO + LIVE DVR'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
     sb.addWidget(ver)
     root_layout.addWidget(sidebar)
 

@@ -26,7 +26,7 @@ from range_slider import RangeSlider
 from advanced_editor import AdvancedVideoEditorWidget
 
 APP_NAME = 'Extrator de Vídeos'
-APP_VERSION = 'Windows Portable v1.9.18 — Refino Visual Etapa 2 — Editor/Timeline'
+APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'
 
 # A ordem precisa ser exatamente a mesma exibida no layout refinado.
 # Isso evita que 720p solicite 1080p (ou outra qualidade) por engano.
