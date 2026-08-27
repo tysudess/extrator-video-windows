@@ -26,7 +26,7 @@ from range_slider import RangeSlider
 from advanced_editor import AdvancedVideoEditorWidget
 
 APP_NAME = 'Extrator de Vídeos'
-APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'
+APP_VERSION = 'Windows Portable v1.9.22 — Qualidades Reais + Globoplay Status'
 
 # A ordem precisa ser exatamente a mesma exibida no layout refinado.
 # Isso evita que 720p solicite 1080p (ou outra qualidade) por engano.
@@ -625,11 +625,13 @@ class DownloadWorker(QThread):
     failed = Signal(str)
     canceled = Signal()
 
-    def __init__(self, url, quality_index, proxy_url=''):
+    def __init__(self, url, quality_index, proxy_url='', format_selector='', compat_selector=''):
         super().__init__()
         self.url = url
         self.quality_index = max(0, min(len(FORMATS) - 1, int(quality_index)))
         self.proxy_url = proxy_url or ''
+        self.format_selector = str(format_selector or '')
+        self.compat_selector = str(compat_selector or '')
         self._cancel_requested = False
         self._process = None
         self._attempt_logs = []
@@ -819,8 +821,8 @@ class DownloadWorker(QThread):
             self.failed.emit('Deno não foi encontrado. O YouTube atual precisa de um runtime JavaScript.')
             return
 
-        fmt = FORMATS[self.quality_index]
-        compat = COMPAT_FORMATS[self.quality_index]
+        fmt = self.format_selector or FORMATS[self.quality_index]
+        compat = self.compat_selector or COMPAT_FORMATS[self.quality_index]
         self.progress.emit(0)
 
         ok, file, err = self._attempt(
@@ -858,6 +860,11 @@ class DownloadWorker(QThread):
                     return
 
             self._fail_with_diagnostic(last_err)
+            return
+
+        low_err = (err or '').lower()
+        if any(k in low_err for k in ('drm', 'login required', 'sign in', 'subscription', 'subscriber', 'cookies required')):
+            self._fail_with_diagnostic(err)
             return
 
         self.message.emit('Método principal falhou. Procurando vídeos dentro da página...')

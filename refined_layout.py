@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-core.APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'
+core.APP_VERSION = 'Windows Portable v1.9.22 — Qualidades Reais + Globoplay Status'
 
 # A referência visual usa seis níveis explícitos. O motor passa a suportá-los de verdade.
 core.QUALIDADES = (
@@ -183,33 +183,108 @@ class AnalyzeWorker(QThread):
                 cmd += ['--proxy', self.proxy_url]
             cmd.append(self.url)
             flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, encoding='utf-8', errors='replace',
+            kwargs = dict(
+                capture_output=True, text=True, encoding='utf-8', errors='replace',
                 creationflags=flags, timeout=90,
             )
+            # No Ubuntu o projeto injeta os certificados/proxy no ambiente.
+            if hasattr(core, 'subprocess_environment'):
+                kwargs['env'] = core.subprocess_environment(self.proxy_url)
+            result = subprocess.run(cmd, **kwargs)
             if result.returncode != 0:
-                raise RuntimeError((result.stderr or result.stdout or 'Falha ao analisar o vídeo.')[-1500:])
+                raw = (result.stderr or result.stdout or 'Falha ao analisar o vídeo.')[-2500:]
+                low = raw.lower()
+                if 'drm' in low:
+                    raise RuntimeError('INDISPONÍVEL: este vídeo está protegido por DRM. O aplicativo não tenta contornar essa proteção.')
+                if any(k in low for k in ('login required', 'sign in', 'cookies', 'subscriber', 'subscription', 'assinatura')):
+                    raise RuntimeError('INDISPONÍVEL: o site exige autenticação/assinatura para este vídeo. Nenhuma qualidade pública foi confirmada para download.')
+                if any(k in low for k in ('geo', 'not available in your country', 'region')):
+                    raise RuntimeError('INDISPONÍVEL: o vídeo não está disponível nesta região/conexão.')
+                raise RuntimeError(raw)
+
             data = json.loads(result.stdout)
             duration = float(data.get('duration') or 0)
-            heights = (2160, 1440, 1080, 720, 480, 360)
-            estimates = {}
             formats = data.get('formats') or []
-            for target in heights:
-                candidates = []
-                for fmt in formats:
+
+            # Só consideramos formatos que o próprio yt-dlp confirmou com URL de mídia,
+            # vídeo real e sem indicação de DRM. Assim a tela não promete qualidades
+            # que existem apenas no layout, mas não na fonte.
+            video_formats = []
+            audio_formats = []
+            for fmt in formats:
+                if not isinstance(fmt, dict) or not fmt.get('url'):
+                    continue
+                if fmt.get('has_drm') is True or fmt.get('drm_family'):
+                    continue
+                vcodec = str(fmt.get('vcodec') or 'none').lower()
+                acodec = str(fmt.get('acodec') or 'none').lower()
+                if vcodec != 'none':
                     h = int(fmt.get('height') or 0)
-                    if h <= 0 or h > target:
-                        continue
-                    size = fmt.get('filesize') or fmt.get('filesize_approx')
-                    tbr = fmt.get('tbr')
-                    if not size and tbr and duration:
-                        size = float(tbr) * 1000.0 * duration / 8.0
-                    if size:
-                        candidates.append((h, float(size)))
-                if candidates:
-                    max_h = max(h for h, _ in candidates)
-                    same = [s for h, s in candidates if h == max_h]
-                    estimates[target] = max(same) if same else 0
+                    if h > 0:
+                        video_formats.append(fmt)
+                elif acodec != 'none':
+                    audio_formats.append(fmt)
+
+            if not video_formats:
+                availability = str(data.get('availability') or '').lower()
+                if availability in ('subscriber_only', 'premium_only', 'needs_auth'):
+                    raise RuntimeError('INDISPONÍVEL: este conteúdo exige autenticação/assinatura e não apresentou formato público para download.')
+                raise RuntimeError('INDISPONÍVEL: o yt-dlp não confirmou nenhum formato de vídeo sem DRM realmente disponível para download.')
+
+            def score(fmt):
+                combined = str(fmt.get('acodec') or 'none').lower() != 'none'
+                size = float(fmt.get('filesize') or fmt.get('filesize_approx') or 0)
+                tbr = float(fmt.get('tbr') or 0)
+                return (1 if combined else 0, tbr, size)
+
+            best_audio = None
+            if audio_formats:
+                best_audio = max(audio_formats, key=lambda f: (float(f.get('abr') or 0), float(f.get('tbr') or 0), float(f.get('filesize') or f.get('filesize_approx') or 0)))
+
+            grouped = {}
+            for fmt in video_formats:
+                grouped.setdefault(int(fmt.get('height') or 0), []).append(fmt)
+
+            available = []
+            label_map = {2160:'2160p (4K)', 1440:'1440p (2K)', 1080:'1080p (Full HD)', 720:'720p (HD)', 480:'480p', 360:'360p'}
+            for height in sorted(grouped, reverse=True):
+                selected = max(grouped[height], key=score)
+                fid = str(selected.get('format_id') or '').strip()
+                if not fid:
+                    continue
+                acodec = str(selected.get('acodec') or 'none').lower()
+                selector = fid
+                if acodec == 'none' and best_audio:
+                    aid = str(best_audio.get('format_id') or '').strip()
+                    if aid:
+                        selector = f'{fid}+{aid}/{fid}'
+                compat_selector = f'bv*[height={height}]+ba/b[height={height}]/b[height<={height}]/b'
+                size = selected.get('filesize') or selected.get('filesize_approx')
+                if not size and selected.get('tbr') and duration:
+                    size = float(selected.get('tbr')) * 1000.0 * duration / 8.0
+                if acodec == 'none' and best_audio:
+                    asize = best_audio.get('filesize') or best_audio.get('filesize_approx')
+                    if not asize and best_audio.get('tbr') and duration:
+                        asize = float(best_audio.get('tbr')) * 1000.0 * duration / 8.0
+                    if size and asize:
+                        size = float(size) + float(asize)
+                available.append({
+                    'height': height,
+                    'label': label_map.get(height, f'{height}p'),
+                    'selector': selector,
+                    'compat_selector': compat_selector,
+                    'estimate': float(size or 0),
+                    'ext': str(selected.get('ext') or 'video').upper(),
+                    'format_id': fid,
+                })
+
+            # A interface possui seis slots. Mostramos apenas as seis melhores
+            # resoluções que realmente vieram na análise; as demais ficam invisíveis.
+            available = available[:6]
+            if not available:
+                raise RuntimeError('INDISPONÍVEL: nenhuma resolução utilizável foi confirmada para download.')
+
+            estimates = {int(q['height']): q.get('estimate') or 0 for q in available}
             thumb_bytes = b''
             thumb = data.get('thumbnail') or ''
             if thumb:
@@ -219,12 +294,13 @@ class AnalyzeWorker(QThread):
                         thumb_bytes = resp.read(2_000_000)
                 except Exception:
                     pass
+
             live_status = str(data.get('live_status') or '')
             is_live = bool(data.get('is_live') or live_status == 'is_live')
             start_timestamp = data.get('release_timestamp') or data.get('timestamp')
-            snapshot_timestamp = int(time.time())
+            snapshot_timestamp = int(time.time()) if 'time' in globals() else 0
             live_elapsed = 0
-            if is_live and start_timestamp:
+            if is_live and start_timestamp and snapshot_timestamp:
                 try:
                     live_elapsed = max(0, snapshot_timestamp - int(float(start_timestamp)))
                 except Exception:
@@ -239,6 +315,7 @@ class AnalyzeWorker(QThread):
                 'width': int(data.get('width') or 0),
                 'height': int(data.get('height') or 0),
                 'estimates': estimates,
+                'available_qualities': available,
                 'thumbnail_bytes': thumb_bytes,
                 'webpage_url': data.get('webpage_url') or self.url,
                 'analyzed_input_url': self.url,
@@ -790,7 +867,7 @@ def build_refined_ui(self):
     btn_theme = QPushButton('☾'); btn_theme.setObjectName('RefinedSmallButton'); btn_theme.setToolTip('Tema escuro')
     mini.addWidget(btn_sidebar_folder); mini.addWidget(btn_help); mini.addWidget(btn_theme)
     sb.addLayout(mini)
-    ver = QLabel('v1.9.21  •  DRAG DIRETO + LIVE DVR'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    ver = QLabel('v1.9.22  •  QUALIDADES REAIS + GLOBOPLAY'); ver.setObjectName('RefinedVersion'); ver.setAlignment(Qt.AlignmentFlag.AlignCenter)
     sb.addWidget(ver)
     root_layout.addWidget(sidebar)
 
@@ -872,15 +949,17 @@ def build_refined_ui(self):
     self.quality_combo = QComboBox(); self.quality_combo.addItems(core.QUALIDADES); self.quality_combo.setCurrentIndex(1); self.quality_combo.hide(); ql.addWidget(self.quality_combo)
     self.quality_group = QButtonGroup(self); self.quality_group.setExclusive(True)
     self.quality_buttons = []
+    self.quality_row_widgets = []
+    self.quality_format_labels = []
     labels = [('2160p (4K)','MP4'),('1440p (2K)','MP4'),('1080p (Full HD)','MP4'),('720p (HD)','MP4'),('480p','MP4'),('360p','MP4')]
     for idx, (name, fmt) in enumerate(labels):
-        row = QHBoxLayout(); row.setSpacing(8)
+        row_widget = QWidget(); row = QHBoxLayout(row_widget); row.setContentsMargins(0,0,0,0); row.setSpacing(8)
         rb = QRadioButton(name); rb.setObjectName('RefinedQuality'); self.quality_group.addButton(rb, idx); self.quality_buttons.append(rb)
-        if idx == 1: rb.setChecked(True)
-        fmt_l = QLabel(fmt); fmt_l.setObjectName('RefinedMuted'); fmt_l.setFixedWidth(35)
+        fmt_l = QLabel(fmt); fmt_l.setObjectName('RefinedMuted'); fmt_l.setFixedWidth(45)
         est = QLabel('—'); est.setObjectName('RefinedMuted'); est.setAlignment(Qt.AlignmentFlag.AlignRight); est.setMinimumWidth(55)
-        self.quality_estimate_labels.append(est)
-        row.addWidget(rb,1); row.addWidget(fmt_l); row.addWidget(est); ql.addLayout(row)
+        self.quality_format_labels.append(fmt_l); self.quality_estimate_labels.append(est); self.quality_row_widgets.append(row_widget)
+        row.addWidget(rb,1); row.addWidget(fmt_l); row.addWidget(est); ql.addWidget(row_widget)
+        row_widget.hide()
     ql.addStretch(1); cards.addWidget(quality,3)
 
     # Resumo
@@ -893,7 +972,7 @@ def build_refined_ui(self):
     sl.addWidget(self.summary_format); sl.addWidget(self.summary_quality); sl.addWidget(self.summary_size); sl.addWidget(self.summary_folder)
     self.live_mode_info = QLabel('')
     self.live_mode_info.setObjectName('LiveInfo'); self.live_mode_info.setWordWrap(True); self.live_mode_info.hide(); sl.addWidget(self.live_mode_info)
-    self.btn_download = QPushButton('↓  BAIXAR'); self.btn_download.setObjectName('RefinedPrimary'); sl.addWidget(self.btn_download)
+    self.btn_download = QPushButton('↓  BAIXAR'); self.btn_download.setObjectName('RefinedPrimary'); self.btn_download.setEnabled(False); sl.addWidget(self.btn_download)
     small_actions = QHBoxLayout(); small_actions.setSpacing(6)
     self.btn_folder = QPushButton('▣ Pasta'); self.btn_folder.setObjectName('RefinedGhost')
     self.btn_update = QPushButton('↻ yt-dlp'); self.btn_update.setObjectName('RefinedGhost')
@@ -968,15 +1047,24 @@ def build_refined_ui(self):
     self.url_edit.returnPressed.connect(self.analyze_video)
     self.btn_analyze.clicked.connect(self.analyze_video)
 
+    def invalidate_analysis(_text):
+        self.analysis_data = {}
+        self.btn_download.setEnabled(False)
+        for row in getattr(self, 'quality_row_widgets', []):
+            row.hide()
+        self.download_status.setText('Link alterado. Clique em ANALISAR para verificar disponibilidade real.')
+    self.url_edit.textChanged.connect(invalidate_analysis)
+
     def quality_changed(qid, checked):
         if not checked:
             return
+        qualities = self.analysis_data.get('available_qualities') or []
+        if qid < 0 or qid >= len(qualities):
+            return
         self.quality_combo.setCurrentIndex(qid)
-        names = ['2160p (4K)','1440p (2K)','1080p (Full HD)','720p (HD)','480p','360p']
-        heights = [2160,1440,1080,720,480,360]
-        self.summary_quality.setText(f'Qualidade:                      {names[qid]}')
-        est = (self.analysis_data.get('estimates') or {}).get(heights[qid])
-        self.summary_size.setText(f'Tamanho estimado:              {_format_size(est)}')
+        q = qualities[qid]
+        self.summary_quality.setText(f"Qualidade:                      {q.get('label') or (str(q.get('height')) + 'p')}")
+        self.summary_size.setText(f"Tamanho estimado:              {_format_size(q.get('estimate'))}")
     self.quality_group.idToggled.connect(quality_changed)
 
 
@@ -1010,45 +1098,74 @@ def analysis_finished(self, data):
     if is_live:
         elapsed = int(data.get('live_elapsed') or 0)
         self.video_meta.setText('  •  '.join(x for x in ('AO VIVO', _format_duration(elapsed), res) if x))
-        self.live_badge.show()
-        self.live_mode_info.setText(
-            f'🔴 MODO LIVE SNAPSHOT\nSerá baixado 00:00:00 → aproximadamente {_format_duration(elapsed)}. '
-            'Ao clicar em BAIXAR, o ponto final é atualizado e congelado novamente.'
-        )
-        self.live_mode_info.show()
+        if hasattr(self, 'live_badge'):
+            self.live_badge.show()
+        if hasattr(self, 'live_mode_info'):
+            self.live_mode_info.setText(f'🔴 MODO LIVE SNAPSHOT\nSerá baixado 00:00:00 → aproximadamente {_format_duration(elapsed)}.')
+            self.live_mode_info.show()
         self.btn_download.setText('🔴  BAIXAR DO INÍCIO ATÉ AGORA')
         self.summary_format.setText('Modo:                            LIVE • INÍCIO → AGORA')
     else:
         self.video_meta.setText('  •  '.join(x for x in (_format_duration(data.get('duration')), res) if x))
-        self.live_badge.hide(); self.live_mode_info.hide()
+        if hasattr(self, 'live_badge'):
+            self.live_badge.hide()
+        if hasattr(self, 'live_mode_info'):
+            self.live_mode_info.hide()
         self.btn_download.setText('↓  BAIXAR')
         self.summary_format.setText('Formato:                         MP4')
+
     raw = data.get('thumbnail_bytes') or b''
     if raw:
         pm = QPixmap(); pm.loadFromData(QByteArray(raw))
         if not pm.isNull():
             self.video_thumb.setPixmap(pm.scaled(self.video_thumb.size(), Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation))
-    heights = [2160,1440,1080,720,480,360]
-    ests = data.get('estimates') or {}
-    for idx, height in enumerate(heights):
-        self.quality_estimate_labels[idx].setText(_format_size(ests.get(height)))
-    checked = self.quality_group.checkedId()
-    if checked < 0:
-        checked = 1
-    self.quality_combo.setCurrentIndex(checked)
-    self.summary_quality.setText(f'Qualidade:                      {core.QUALIDADES[checked]}')
-    self.summary_size.setText(f'Tamanho estimado:              {_format_size(ests.get(heights[checked]))}')
+
+    qualities = data.get('available_qualities') or []
+    for row in self.quality_row_widgets:
+        row.hide()
+    for idx, q in enumerate(qualities[:len(self.quality_row_widgets)]):
+        self.quality_buttons[idx].setText(q.get('label') or f"{q.get('height')}p")
+        self.quality_format_labels[idx].setText(q.get('ext') or 'VIDEO')
+        self.quality_estimate_labels[idx].setText(_format_size(q.get('estimate')))
+        self.quality_row_widgets[idx].show()
+
+    if not qualities:
+        self.btn_download.setEnabled(False)
+        self.summary_quality.setText('Qualidade:                      nenhuma disponível')
+        self.summary_size.setText('Tamanho estimado:              —')
+        self.download_status.setText('Nenhum formato realmente disponível para download.')
+        return
+
+    # Preferimos 720p como padrão quando existe; caso contrário, a melhor disponível.
+    selected = next((i for i,q in enumerate(qualities) if int(q.get('height') or 0) == 720), 0)
+    self.quality_buttons[selected].setChecked(True)
+    self.quality_combo.setCurrentIndex(selected)
+    q = qualities[selected]
+    self.summary_quality.setText(f"Qualidade:                      {q.get('label')}")
+    self.summary_size.setText(f"Tamanho estimado:              {_format_size(q.get('estimate'))}")
+    self.btn_download.setEnabled(True)
     if is_live:
-        self.download_status.setText('🔴 Live detectada. Clique para baixar desde o início somente até o ponto atual.')
+        self.download_status.setText(f'🔴 Live detectada. {len(qualities)} qualidade(s) realmente disponível(is).')
     else:
-        self.download_status.setText('Análise concluída. Escolha a qualidade e clique em BAIXAR.')
+        self.download_status.setText(f'Análise concluída: {len(qualities)} qualidade(s) realmente disponível(is) para download.')
 
 
 def analysis_failed(self, message):
     self.btn_analyze.setEnabled(True); self.btn_analyze.setText('⌕  ANALISAR')
-    self.download_status.setText('Não foi possível concluir a análise.')
-    QMessageBox.warning(self, core.APP_NAME, core.friendly_network_error(message))
-
+    self.analysis_data = {}
+    for row in getattr(self, 'quality_row_widgets', []):
+        row.hide()
+    self.btn_download.setEnabled(False)
+    self.video_title.setText('Vídeo indisponível para download')
+    self.video_channel.setText('')
+    self.video_meta.setText('')
+    self.summary_quality.setText('Qualidade:                      nenhuma disponível')
+    self.summary_size.setText('Tamanho estimado:              —')
+    clean = str(message or 'Não foi possível analisar este vídeo.')
+    if 'INDISPONÍVEL:' in clean:
+        clean = clean.split('INDISPONÍVEL:',1)[1].strip()
+    self.download_status.setText('Indisponível: ' + clean)
+    QMessageBox.information(self, core.APP_NAME, 'Este link não apresentou vídeo realmente disponível para download.\n\n' + clean)
 
 
 def download_video_liveaware(self):
@@ -1058,21 +1175,31 @@ def download_video_liveaware(self):
         return
     if self.download_worker and self.download_worker.isRunning():
         return
+    analyzed_url = str(self.analysis_data.get('analyzed_input_url') or '')
+    qualities = self.analysis_data.get('available_qualities') or []
+    qid = self.quality_group.checkedId()
+    if analyzed_url != url or qid < 0 or qid >= len(qualities):
+        QMessageBox.information(self, core.APP_NAME, 'Clique em ANALISAR e escolha uma das qualidades realmente disponíveis antes de baixar.')
+        return
     proxy = self._current_proxy_url(True)
     if proxy is None:
         return
+    q = qualities[qid]
     self._update_proxy_status(); self._update_download_progress(0); self._set_download_busy(True)
-    analyzed_url = str(self.analysis_data.get('analyzed_input_url') or '')
-    live = bool(self.analysis_data.get('is_live')) and bool(analyzed_url) and analyzed_url == url
+    live = bool(self.analysis_data.get('is_live'))
     if live and core.is_youtube(url):
+        heights = [2160,1440,1080,720,480,360]
+        target = int(q.get('height') or 720)
+        core_index = min(range(len(heights)), key=lambda i: abs(heights[i]-target))
         self.download_status.setText('🔴 Preparando live do início até o ponto atual…')
-        self.download_worker = LiveSnapshotWorker(
-            url, self.quality_combo.currentIndex(), proxy,
-            self.analysis_data.get('live_start_timestamp') or 0,
-        )
+        self.download_worker = LiveSnapshotWorker(url, core_index, proxy, self.analysis_data.get('live_start_timestamp') or 0)
     else:
-        self.download_status.setText('Analisando página…')
-        self.download_worker = core.DownloadWorker(url, self.quality_combo.currentIndex(), proxy)
+        self.download_status.setText('Iniciando download da qualidade confirmada…')
+        self.download_worker = core.DownloadWorker(
+            url, 0, proxy,
+            format_selector=q.get('selector') or '',
+            compat_selector=q.get('compat_selector') or '',
+        )
     self.download_worker.progress.connect(self._update_download_progress)
     self.download_worker.message.connect(self.download_status.setText)
     self.download_worker.done.connect(self.download_finished)

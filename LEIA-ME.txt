@@ -1,5 +1,12 @@
-EXTRATOR DE VÍDEOS WINDOWS v1.9.21 — TIMELINE DRAG DIRETO + LIVE DVR
+EXTRATOR DE VÍDEOS WINDOWS v1.9.22 — QUALIDADES REAIS + GLOBOPLAY
 
+
+NOVIDADE v1.9.22
+- O botão ANALISAR agora mostra somente qualidades realmente confirmadas pelo yt-dlp.
+- Não exibe resoluções falsas quando o site não fornece aquele formato.
+- Conteúdo indisponível, com DRM ou que exige login/assinatura é marcado como indisponível, sem oferecer opções falsas.
+- Melhor identificação do status de links do Globoplay, respeitando DRM e autenticação.
+- Mantém timeline com arrastar e soltar pelo mouse, Delete no teclado, editor integrado, proxy, H.264/H.265, compressão e Live DVR do início até o momento atual.
 
 NOVIDADE v1.9.21
 - Agora o clipe inteiro na timeline pode ser clicado e arrastado com o mouse.
@@ -113,3 +120,10 @@ ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
 - Exemplo: se a live começou há 01:27:35, o objetivo do arquivo é 00:00:00 -> 01:27:35, sem continuar acompanhando depois.
 - Requer que a transmissão ofereça DVR/segmentos desde o início. O suporte do yt-dlp para recortes de live ainda é experimental; algumas lives podem não permitir esse modo.
 - Se o modo exato falhar, o aplicativo tenta novamente com formato MP4 combinado. Ele NÃO muda para download a partir do momento atual, pois isso seria diferente do modo solicitado.
+
+
+ATUALIZAÇÃO — QUALIDADES REAIS / GLOBOPLAY
+- Depois de clicar em ANALISAR, o programa mostra somente resoluções que o yt-dlp confirmou como realmente disponíveis.
+- Qualidades sem formato real deixam de aparecer.
+- Conteúdos protegidos por DRM ou que exigem autenticação/assinatura são informados como indisponíveis.
+- O aplicativo não contorna DRM nem proteção de acesso.
