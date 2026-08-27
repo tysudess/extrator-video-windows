@@ -1,4 +1,4 @@
-name: Publicar Windows v1.9.22 Qualidades Reais + Globoplay
+name: Aplicar Windows v1.9.22 ao main
 
 on:
   push:
@@ -11,10 +11,11 @@ permissions:
   contents: write
 
 jobs:
-  publish:
+  atualizar-main:
     runs-on: windows-latest
     env:
-      PATCH_B64: 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
+      PATCH_B64_1: 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
+      PATCH_B64_2: U4mZIRCU6VXdUpjyJyt6fw4lXajlUHEM1lsYxrvmW6jx7gF9tyqtbGGbc2wNrz/VE7/3Vv19d9Uc8gfD0tP00Wfms3rrW5CPnIGofpdB2OZdoDRPQNmlPEht3glQK2gsA6wfUUZ0N0oSkuNR3dslXDI4xVNWFemszCyzq4pjlaTuxTMD5FMXuIL7zZU8ClorWVP/4nrprAGPrkis+9tq8smC0NOWtFVTjIw9lEqNPo1d10HN08owsxp1JBKNs3qp0tYVLego1Cg8qauY+A9QI+OWXuvqqtzg6MuWFJ8rG0VrLhiq+YzSQeoIZaath+a0oti7Rjlw1Kdc0nDMR5hBGkVzqbbEIjcAL4IdUbocBpR0fIZH6r1HebrlkE4poS4Dq9cSY1MYzeH+4gcX8PFjJOcID7fucNsDI0vXMkpT1+qgQPr9srd9VencpCV67wXNfR3tTUcDAH0eg+/y3eIHxNp3hnzzreYCi5Rvc5kI/lWjx17rGU+ER6EjwhevEVqkgynEJGPo43AwvFWEh5ZV8ToXsKQnPhBLVr/SvgyV6Okt4t1Wd4M1N3Y3c6lYK29eVncTE7U7WMXeGIDBwv8b5briZiRmMTugP2QdK0nj3mwxyozpsQOdLF50W413KQAo8CAaUA4u8DMIXKOqfqGq5dqAdSd9WUgHiXkYD1DM4Js3y81FCNrOI5G9VZSNycpe5IMVkc9n0TTIE0apwt8d/LAbBZO8UhXaeMLvtPM0cYMhdyPw8XS4o8xk4QJVQrCFSBIQSvhIOCHPhl5JY5cUVs9K3a+Qh3K6R01ndTZcBU/aKuCoLHe+H7mkuHopJcV5uIsZRA+7Wyq74p5qY72RTjwFI459ycRBPU0cp7UlK2m+XsHjWqtftCKrl1mqiuXDSu3QQCVgSaqSPq2inVocpf9Q3LAGVRXeiCFl6WAovWdog/k8Qa8qaaeCCFe8dgbSn81jTSurgJP0aHcdM2B2th+pScLoyHAuXWeQJMzMJe18J1M0jP1BPBUUZHxxOo+mT+ZxHPi29dO//K/VeJy9R9/3ZPgtLOXHHPTKOlP0zj3uuqpOqfgFmJoLcEKsC4GpttFoHgaJLfGkLzvccVT2jY31cJdnyENww11HhECsosxUuLPqN9SqJh4N8eVz2nCxsaw2NeC64jCfI9qyrSSLh/30/b+xmrNTOCaoVTP4l+AKSzVwXajvyolKL3gRd9Ifz1w+Ub+eImRIcsiqurOhu7PsKNbP1SmDd5qx1+njMACTopOtsvd6yjBzipIMH220ulusubsJa+xq8pdLfMQwFgaVXjzFL0+CGxsGUS6BHTiMhRfZhRSl6tLAgafzEM9mHGJqmt2tLjaFsWB7r11zgKVyjYp+U5QD+60U4Uv8qUb5uKIgdghsqzuPwIDbFEipoDkkUuYGX+51GLwZvNEJbTVFNHIm30IXyiJM9MDOhZaso9NN8DPsXHApe1gML6VvjAhT+kwFmdKfFGfSP3UvxnQc7qbFbMzIamEkroELtPDnHgDqWNiqnw1jTyWkLJMXX4FkaOUGBsND5Oj5jI+kP7F3DIyQMQmr6SlVVQp0spIZRTrN4sfREQ8n0o9gcaV/K5vMUDhC0xdnHPxYbUlxeFhnWKOvL9R0WdWyAqKo6YTDFjKsWEzLSeKQhkMDViEGcW4QynV7ugNPMXtSOFrszJTqgZsZI5yMx+phTa+P5jHmzhqFnskbgWoTT+2HW41cNvVHJL25ZTAblnXDgP70/R+wFjy8i7AucpddPEOIkRU/goXEm3uqH1tbBvdyE5JgDa14ycTA40ZOkg0rA1Pb1WKVPaTRl54imcRGZbJbPHRQaQKMiDQRXrXXj2stTyp0mfbklO/Dh5jUrmlAP9S2WwmGqngeh5gJTcZ+xEMnMqjpkbQepkn0v2RnIpp7gVrFdh8ihtqFxWzFNay0YgAtj4cJ/5GDtUV0Z5aWoWjU46XtEGQylhFyDrzAEQM8SWdoiVVfqqg2mMN8CM9T01QuDrjf+SbkM2VPqoslC2u5+/mCWj3oDSK69BRmEZn+7h8Ze9I//HX/LO2ZWb5G+09DibyyKnti1m8Ya+nP3I+qKgc+eh2OTSd9Vuismk2E4QM+QnctKq+Rudfm0rVtSgPSVZJUGuo//5Gd4pnrXK9V2ZphfjkNotgqkp/PMGuhzMn/0ZvGOfqq8B30UWN3t3cId3bXNx+1NjZXB57gN9HRSJ2xe4oHbITTGQW+D+0pbmuva0DxyuJ49MsOHs99dVfN7JSd9K8peQzsLRWKZGQPMIfb3FLLaMDrgc4yNDcxVxAfYxnGdF/APRgDETHlV6sjflaFYbdoC7MQ0UArrQ1tvgtJ8zp0RK4fjAUNiP+KcRecCzoK9tSVlBqXnWFWIUbwMig9PNQb/xLTKSgZFaOsaR5CfsaQW0+neOI143oFW9NsTWR7CuRVPfu1xAR+hYjMmIWOtuo3vcqjTSkL0qBBcvAqN2W5vJJciCFJrzSPPkGH2Gcqywu/fr7H8GBjWqc0I/qUVeXaX+38AFkDhiA2JU8g7wjkHIAy8DcBvwb6BPCN7KMsWfWSklUpV5VSVTFTFRNVocZVAUEVlsRUjsZWeiKmVx2LfUsDuYTBXb0z44oKINp105KFiGgy3r5rGPsvilyjpo+4JBsdvOAe96eBDjQ5QaGfbxMkhtUI4Lwz99heQyfTSaZmCxpWy5lP7uSMjsKrnSYaJp4jtl/nw2i49WWB9X33SaOm6fyAP7nXgEs7AdROjR/dkc5FMJm4hl4X9JZgmzqKtN4FaSLLv7vTepRa/nSuwfTLaCocbetw6hNFzwK0hoJn4dR8uNGMtaY5OXm9UzkkHtjWzADqYI7V+TaQvn1DRvhGpYn1T9jLw5cnYGkTViX7m7Zup0HXv1D8+qZRlEPq0JCDte5E0+CNXfk+B9WoR4Vkbuv//vUP/8mOTvZPVMTr/Lh/ev7VycVv/XMRLn5gQy5v8J6V9IqRn373D5hBFtzgpOuz9G9rB/Cuw6x8i1Y/MK6yUOCJLrLAYxkMT967eEMIHRWW36nrXkAKJgLvqMnu8+gYZO8aueJOs+J8kV7/MlZalUdBy6y+i1ja+hKC5bn5+WejuK+/hF9sKchQ0k3d1ZPIoNOHx4vfPz08Yf2Lxd+x/pcnZ/3Skfa8Y5SROgpKJiT/DzEElSlpBMeeawP3c3ofpJMlzlUdzVhVK1Ovp9Yj+kgyuSKx+8mk6VDfIQU5N2jF6X6mkkDrZ5wihQl0U6fXKvZ79e6LSmlJtn3xGB5/Y0jCzCN/Q9544KfCjMw8OqbzLAy8faBpv3gCVPphyG/peE+jhAOhgoyOAf/YlQfjlZBRp3CEuiGoFI24q5eefCFcE0GOMOoUzWCBO0PZAhUQnV8JMTOePbk9uJlhrrc/oeIXeEOTYiYII9U494IgnuZfJHJ5HxQGi3P+GFAJHKlyadw2yxHMQra6QTNmuyzKdAmErlKpKGKkyABjaeq9xuQJ1s4jB/3y0EmWQ0yN1RU+y53DzMh0jajDcuicOApGhQ9ArIWti0tNPcOvHxNuRjlcmzTVUChUWQPTjbmH42K4lXVRwl4+Jmjaq1SYXuflKAPDPXSA6ig3rkr+ciEsnpewMhYef/K2gITfzT5ZKZpaSTnLbnp5uH9wYtVRWl0PytC5jqbBF01PgxVVXtuylLO994wjLJX7O8U+yUAyMvytlTyOu0Segv+rxiWO80cRVj14ULrzo6lix6d0CYPEdDJyjenCshl3Qsyv0tdUqvOAGIuO1D1lAOhCiTcP6pwzs+1OGvBIcql97LctlcK06rSFUAklYlUlSeA+EPQPFp71RsV2YaIxSatX5e2i5oqWMiGha+Td25S+Qe6j+bep//oz+67NO/XG2Nc1Pc32ahJK0JruEHFEDOwCeJ/Gz0gwyRcIi9cxphcA6ks4lVulruBcWT3G1a2/zYei3mUHYG0QvEodsmXU6OTx+Yrj7+tUSlSVkTtf/Ig9OIhGAd1OYBxXp5sRdVRRgdD7DLSimd77DrRsMDBKUQhH0J1ZGpfrO4JyAWkzplwUpseVRTQI//t/YmlUNYcg6o1gclsX5scqk6e4IEOW5bJ2EmIvjlR3nwQ3nTc89HH3QI0jvd8Gbw3UP8ehFL7j3g58Eb8JwlcDuoPEToYMNA0Vqotxf1jIuog1Vl7lTLwuY9fgsroCMX/5b37arTINDFr5ws2oVJTJe6hWYwXT+CFL7UdZZkeu4L5ORdXzSsinQq7Su0TMuycSOpiemc9TpkRNIm9MZ9Ic/e1EMxcv1irUa3Ubl92r/NGX5UpwaE5lj1msqRrQlU2h1zeSUmCgUvCtAxwd3uJcOmlp3DVwF9D4rf9b3+hGakPSISiJwdWEgx6KZFNLhUO3dlobXdbsdh9ttR52k3DoXXUrNxTwKEWOd28oxzM5IlN6AT7y2dwnu1BBktiZJjCqOxf16YDqHZNyrmMjd8HiR9l2eS1X8CSb6eUmRu9/QRdUJhs1K+7Z3E+cKrbLBGZR0hpImq1uQS/fqm5elQvd1pcwK8hQhWRVmIQuZkouDxwpPDdIL0gqABpVGsjjEdKa6a7Y1jAu2FO7u7oBpZdpvCx5mYpYcvuhvZ4WAR3O3g/n0a2Z0/SRJK2d5FknifN1RNJMeXX6icqafVCP871SV5w2799EOglpdjmJDhTA/f75UNjYoiF3K8aB0vL6gpe9Ol8CvQjzrstQZHeySt+mu4npStYkHtTInQqWPcaHURqOkFdt1WDpgtbl8BjcLjSd6F0RI8p30Bvw96fv/91q1KFPbdn2CPOe6wR6ndKe37/IrlPMe0Aj0/1pJFfnFw441ExscurCzMvXPlvL3OZo3r/z1N1sftIr/d+jK++H4mndxxnSd1muNg0kzoWrSe/F+ZUjAYe+HEl1KX6S5eOY7kV2Gkr1vPkePc9H22kc66mENMu3MWX3JmvVSw/sabtUqFW8bVnXKp72K1c2t2CLi3l63Wwuo6XWLi8jldyFmqNUMyPL6Diw0tQQSbZ5G2v/D6xEzqEDZgAA
     steps:
       - name: Checkout do main atual
         uses: actions/checkout@v4
@@ -22,120 +23,18 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Aplicar patch validado da v1.9.22 e atualizar main
-        shell: powershell
-        run: |
-          python -c "import os,base64,gzip,pathlib; pathlib.Path('v1.9.22.patch').write_bytes(gzip.decompress(base64.b64decode(os.environ['PATCH_B64'])))"
-          git apply -p2 --index v1.9.22.patch
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py range_slider.py advanced_editor.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Windows v1.9.22 - Qualidades Reais + Globoplay"
-          git push origin HEAD:main
-          $sha = git rev-parse HEAD
-          "SOURCE_SHA=$sha" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
       - name: Configurar Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Instalar dependencias Python
+      - name: Aplicar patch validado da v1.9.22
         shell: powershell
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Preparar pasta bin
-        shell: powershell
-        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
-
-      - name: Baixar yt-dlp NIGHTLY
-        shell: powershell
-        run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
-          & "bin/yt-dlp.exe" --version
-
-      - name: Baixar Deno
-        shell: powershell
-        run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
-          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
-          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
-          & "bin/deno.exe" --version
-
-      - name: Baixar FFmpeg e FFprobe
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $ProgressPreference = 'SilentlyContinue'
-          $fontes = @(
-            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
-            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-          )
-          $baixado = $false
-          foreach ($url in $fontes) {
-            Write-Host "Tentando fonte: $url"
-            for ($tentativa = 1; $tentativa -le 4; $tentativa++) {
-              try {
-                if (Test-Path "ffmpeg.zip") { Remove-Item "ffmpeg.zip" -Force }
-                Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
-                if ((Test-Path "ffmpeg.zip") -and ((Get-Item "ffmpeg.zip").Length -gt 1000000)) { $baixado = $true; break }
-                throw "Arquivo baixado ausente ou muito pequeno."
-              }
-              catch {
-                Write-Warning "Falha na tentativa ${tentativa}: $($_.Exception.Message)"
-                if ($tentativa -lt 4) { Start-Sleep -Seconds 8 }
-              }
-            }
-            if ($baixado) { break }
-          }
-          if (-not $baixado) { throw "Nao foi possivel baixar FFmpeg/FFprobe." }
-          if (Test-Path "ffmpeg-temp") { Remove-Item "ffmpeg-temp" -Recurse -Force }
-          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
-          $ffmpeg = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
-          $ffprobe = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
-          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado" }
-          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado" }
-          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
-          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
-
-      - name: Gerar aplicativo Modern UI
-        shell: powershell
-        run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout.py
-
-      - name: Montar portable
-        shell: powershell
-        run: |
-          Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
-          Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
-          Copy-Item "ExtratorVideos-Icone.ico" "dist/ExtratorVideos/ExtratorVideos-Icone.ico" -Force
-          New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
-          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip" -Force
-
-      - name: Publicar GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.22-qualidades-reais-globoplay
-          target_commitish: ${{ env.SOURCE_SHA }}
-          name: Extrator de Vídeos Windows v1.9.22 - Qualidades Reais + Globoplay Status
-          body: |
-            Extrator de Vídeos Windows Portable v1.9.22 - Qualidades Reais + Globoplay Status.
-            Mantém timeline com arrastar e soltar pelo mouse, Delete no teclado, editor integrado, proxy, H.264/H.265, compressão e Live DVR do início até o momento atual.
-            O botão ANALISAR mostra somente resoluções realmente confirmadas pelo yt-dlp.
-            Conteúdo indisponível, protegido por DRM ou que exige login/assinatura é marcado como indisponível, sem opções falsas.
-          prerelease: false
-          make_latest: true
-          files: |
-            ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip
-          fail_on_unmatched_files: true
-          overwrite_files: true
+          python -c "import os,base64,gzip,pathlib; s=os.environ['PATCH_B64_1']+os.environ['PATCH_B64_2']; pathlib.Path('v1.9.22.patch').write_bytes(gzip.decompress(base64.b64decode(s)))"
+          git apply -p2 --3way --index v1.9.22.patch
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py range_slider.py advanced_editor.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Windows v1.9.22 - Qualidades Reais + Globoplay"
+          git push origin HEAD:main
