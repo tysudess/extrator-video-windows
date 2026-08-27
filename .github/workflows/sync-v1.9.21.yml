@@ -1,4 +1,4 @@
-name: Sincronizar e Publicar Windows v1.9.21
+name: Sincronizar fontes Windows v1.9.21
 
 on:
   push:
@@ -7,12 +7,10 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
-  sync-build-release:
+  sync-source:
     runs-on: windows-latest
-
     steps:
       - name: Checkout completo
         uses: actions/checkout@v4
@@ -24,7 +22,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Aplicar exatamente a v1.9.21 anexada
+      - name: Reconstruir exatamente os fontes da v1.9.21
         shell: python
         run: |
           import base64
@@ -46,13 +44,7 @@ jobs:
 
           p = Path('main.py')
           s = p.read_text(encoding='utf-8')
-          s, n = re.subn(
-              r"^APP_VERSION = .*?$",
-              "APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'",
-              s,
-              count=1,
-              flags=re.M,
-          )
+          s, n = re.subn(r"^APP_VERSION = .*?$", "APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'", s, count=1, flags=re.M)
           if n != 1:
               raise RuntimeError('APP_VERSION de main.py não encontrado')
           write_lf(p, s)
@@ -63,83 +55,56 @@ jobs:
               s = s.replace('import urllib.request\n', 'import urllib.request\nimport urllib.parse\n', 1)
           if 'import tempfile' not in s:
               s = s.replace('import urllib.parse\n', 'import urllib.parse\nimport tempfile\n', 1)
-          s, n = re.subn(
-              r"^core\.APP_VERSION = .*?$",
-              "core.APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'",
-              s,
-              count=1,
-              flags=re.M,
-          )
+          s, n = re.subn(r"^core\.APP_VERSION = .*?$", "core.APP_VERSION = 'Windows Portable v1.9.21 — Timeline Drag Direto + Live DVR'", s, count=1, flags=re.M)
           if n != 1:
               raise RuntimeError('APP_VERSION de refined_layout.py não encontrado')
-          s, n = re.subn(
-              r'class LiveSnapshotWorker\(QThread\):.*?(?=def _format_duration)',
-              lambda m: live,
-              s,
-              count=1,
-              flags=re.S,
-          )
+          s, n = re.subn(r'class LiveSnapshotWorker\(QThread\):.*?(?=def _format_duration)', lambda m: live, s, count=1, flags=re.S)
           if n != 1:
               raise RuntimeError('Bloco LiveSnapshotWorker não encontrado exatamente uma vez')
-          s, n = re.subn(
-              r"ver = QLabel\('v[^']*•[^']*'\)",
-              "ver = QLabel('v1.9.21  •  DRAG DIRETO + LIVE DVR')",
-              s,
-              count=1,
-          )
+          s, n = re.subn(r"ver = QLabel\('v[^']*•[^']*'\)", "ver = QLabel('v1.9.21  •  DRAG DIRETO + LIVE DVR')", s, count=1)
           if n != 1:
               raise RuntimeError('Rótulo visual da versão não encontrado')
           write_lf(p, s)
 
           readme = Path('.sync/LEIA-ME-target.txt').read_text(encoding='utf-8')
           write_lf('LEIA-ME.txt', readme)
-          build = Path('.sync/build-target.yml').read_text(encoding='utf-8')
-          write_lf('.github/workflows/build-windows-portable.yml', build)
 
-      - name: Validar fontes e hashes da v1.9.21
+      - name: Validar fontes contra o ZIP v1.9.21
         shell: python
         run: |
           import hashlib
           import py_compile
           from pathlib import Path
-
           expected = {
-              '.github/workflows/build-windows-portable.yml': 'ff569a54f17df3ae6272a4f466c1adb5c69900db',
               'LEIA-ME.txt': 'e7d824aa47729f29b25f1592ed7fdd32114f4f38',
               'advanced_editor.py': '24c723c9f40946d1c13de0b9e23e55a182581e2d',
               'main.py': '225edd8a6b93c71121913cb3cf6bcfc0aa045441',
               'refined_layout.py': 'c56958ac0b00b92d76c41e7bb79eb0da6682004b',
           }
-          errors = []
           for name, wanted in expected.items():
               data = Path(name).read_bytes()
               actual = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
-              print(f'{name}: {actual} ({len(data)} bytes)')
+              print(f'{name}: {actual}')
               if actual != wanted:
-                  errors.append(f'{name}: esperado {wanted}, obtido {actual}')
-          if errors:
-              raise RuntimeError('\n'.join(errors))
+                  raise RuntimeError(f'Hash divergente em {name}')
           for name in ('main.py','novo_layout.py','modern_layout.py','refined_layout.py','range_slider.py','advanced_editor.py'):
               py_compile.compile(name, doraise=True)
-          print('VALIDAÇÃO V1.9.21 OK')
+          print('VALIDAÇÃO DOS FONTES V1.9.21 OK')
 
-      - name: Gravar v1.9.21 na main e fixar tag
+      - name: Publicar fontes limpos na main
         shell: powershell
         run: |
+          $stash = Join-Path $env:RUNNER_TEMP 'v1921-source'
+          New-Item -ItemType Directory -Force -Path $stash | Out-Null
+          Copy-Item advanced_editor.py,main.py,refined_layout.py,LEIA-ME.txt -Destination $stash -Force
+          git fetch origin main
+          git reset --hard origin/main
+          Copy-Item (Join-Path $stash 'advanced_editor.py') advanced_editor.py -Force
+          Copy-Item (Join-Path $stash 'main.py') main.py -Force
+          Copy-Item (Join-Path $stash 'refined_layout.py') refined_layout.py -Force
+          Copy-Item (Join-Path $stash 'LEIA-ME.txt') LEIA-ME.txt -Force
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -r -f .sync
-          git rm -f .github/workflows/sync-v1.9.21.yml
-          git add advanced_editor.py main.py refined_layout.py LEIA-ME.txt .github/workflows/build-windows-portable.yml
+          git add advanced_editor.py main.py refined_layout.py LEIA-ME.txt
           git commit -m "Windows v1.9.21 - Timeline Drag Direto + Live DVR"
           git push origin HEAD:main
-          git tag -f v1.9.21-timeline-drag-direto HEAD
-          git push origin -f refs/tags/v1.9.21-timeline-drag-direto
-
-      - name: Disparar build oficial na main
-        shell: powershell
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh workflow run build-windows-portable.yml --ref main
-          Write-Host "Workflow oficial v1.9.21 disparado na main."
