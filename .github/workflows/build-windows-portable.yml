@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.20.1 Live Format Fix
+name: Build Windows Portable v1.9.21 Timeline Drag Direto
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.20.1-live-format-fix
+      - v1.9.21-timeline-drag-direto
 
 permissions:
   contents: write
@@ -113,24 +113,24 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.20.1-LIVE-FORMAT-FIX.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.21-TIMELINE-DRAG-DIRETO.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.20.1-live-format-fix
+          tag_name: v1.9.21-timeline-drag-direto
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.20.1 - Live Format Fix
+          name: Extrator de Vídeos Windows v1.9.21 - Timeline Drag Direto
           body: |
-            Extrator de Vídeos Windows Portable v1.9.20.1 - Live Format Fix.
+            Extrator de Vídeos Windows Portable v1.9.21 - Timeline Drag Direto.
             Mantém toda a v1.9.19 aprovada: layout refinado, timeline reordenável, Delete no teclado, cortes, união interna, proxy e compressão inteligente.
             Nova função para YouTube ao vivo: ao analisar uma live, o app detecta AO VIVO e oferece BAIXAR DO INÍCIO ATÉ AGORA.
             O ponto final é atualizado e congelado no instante em que o download começa. A transmissão pode continuar no YouTube, mas o arquivo tenta terminar naquele ponto.
-            Usa yt-dlp NIGHTLY + --live-from-start + recorte temporal. Como o suporte upstream é experimental, há tentativa principal e modo MP4 compatível; o app não troca silenciosamente para 'a partir de agora'.
+            Método principal: congela a playlist HLS/DVR no instante do clique e transforma essa janela em um snapshot local encerrado. Assim, a live continua no YouTube, mas novos segmentos não entram no arquivo. Mantém fallback yt-dlp para casos sem HLS compatível.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.20.1-LIVE-FORMAT-FIX.zip
+            ExtratorVideos-Windows-Portable-v1.9.21-TIMELINE-DRAG-DIRETO.zip
           fail_on_unmatched_files: true
           overwrite_files: true
