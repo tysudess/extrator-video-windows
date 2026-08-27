@@ -1,0 +1,136 @@
+name: Build Windows Portable v1.9.21 Timeline Drag Direto
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - v1.9.21-timeline-drag-direto
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias Python
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar pasta bin
+        shell: powershell
+        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
+
+      - name: Baixar yt-dlp NIGHTLY
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          & "bin/yt-dlp.exe" --version
+
+      - name: Baixar Deno
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
+          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
+          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
+          & "bin/deno.exe" --version
+
+      - name: Baixar FFmpeg e FFprobe
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $fontes = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+          $baixado = $false
+          foreach ($url in $fontes) {
+            Write-Host "Tentando fonte: $url"
+            for ($tentativa = 1; $tentativa -le 4; $tentativa++) {
+              try {
+                if (Test-Path "ffmpeg.zip") { Remove-Item "ffmpeg.zip" -Force }
+                Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+                if ((Test-Path "ffmpeg.zip") -and ((Get-Item "ffmpeg.zip").Length -gt 1000000)) {
+                  $baixado = $true
+                  break
+                }
+                throw "Arquivo baixado ausente ou muito pequeno."
+              }
+              catch {
+                Write-Warning "Falha na tentativa ${tentativa}: $($_.Exception.Message)"
+                if ($tentativa -lt 4) { Start-Sleep -Seconds 8 }
+              }
+            }
+            if ($baixado) { break }
+          }
+          if (-not $baixado) { throw "Nao foi possivel baixar FFmpeg/FFprobe." }
+          if (Test-Path "ffmpeg-temp") { Remove-Item "ffmpeg-temp" -Recurse -Force }
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
+          $ffmpeg = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado" }
+          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado" }
+          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
+          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
+          & "bin/ffmpeg.exe" -version
+          & "bin/ffprobe.exe" -version
+
+      - name: Verificar icone e sintaxe
+        shell: powershell
+        run: |
+          if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py range_slider.py advanced_editor.py
+
+      - name: Gerar aplicativo Modern UI
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout.py
+
+      - name: Montar portable
+        shell: powershell
+        run: |
+          Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
+          Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
+          Copy-Item "ExtratorVideos-Icone.ico" "dist/ExtratorVideos/ExtratorVideos-Icone.ico" -Force
+          New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
+          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.21-TIMELINE-DRAG-DIRETO.zip" -Force
+
+      - name: Publicar direto no GitHub Releases
+        uses: softprops/action-gh-release@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v1.9.21-timeline-drag-direto
+          target_commitish: ${{ github.sha }}
+          name: Extrator de Vídeos Windows v1.9.21 - Timeline Drag Direto
+          body: |
+            Extrator de Vídeos Windows Portable v1.9.21 - Timeline Drag Direto.
+            Mantém toda a v1.9.19 aprovada: layout refinado, timeline reordenável, Delete no teclado, cortes, união interna, proxy e compressão inteligente.
+            Nova função para YouTube ao vivo: ao analisar uma live, o app detecta AO VIVO e oferece BAIXAR DO INÍCIO ATÉ AGORA.
+            O ponto final é atualizado e congelado no instante em que o download começa. A transmissão pode continuar no YouTube, mas o arquivo tenta terminar naquele ponto.
+            Método principal: congela a playlist HLS/DVR no instante do clique e transforma essa janela em um snapshot local encerrado. Assim, a live continua no YouTube, mas novos segmentos não entram no arquivo. Mantém fallback yt-dlp para casos sem HLS compatível.
+          prerelease: false
+          make_latest: true
+          files: |
+            ExtratorVideos-Windows-Portable-v1.9.21-TIMELINE-DRAG-DIRETO.zip
+          fail_on_unmatched_files: true
+          overwrite_files: true
