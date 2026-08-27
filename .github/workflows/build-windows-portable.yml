@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.21 Timeline Drag Direto
+name: Build Windows Portable v1.9.22 Qualidades Reais + Globoplay Status
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.21-timeline-drag-direto
+      - v1.9.22-qualidades-reais-globoplay
 
 permissions:
   contents: write
@@ -113,24 +113,25 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.21-TIMELINE-DRAG-DIRETO.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.21-timeline-drag-direto
+          tag_name: v1.9.22-qualidades-reais-globoplay
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.21 - Timeline Drag Direto
+          name: Extrator de Vídeos Windows v1.9.22 - Qualidades Reais + Globoplay Status
           body: |
-            Extrator de Vídeos Windows Portable v1.9.21 - Timeline Drag Direto.
-            Mantém toda a v1.9.19 aprovada: layout refinado, timeline reordenável, Delete no teclado, cortes, união interna, proxy e compressão inteligente.
+            Extrator de Vídeos Windows Portable v1.9.22 - Qualidades Reais + Globoplay Status.
+            Mantém as funções aprovadas: timeline com arrastar e soltar pelo mouse, Delete no teclado, editor integrado, proxy, H.264/H.265, compressão, cortes, união interna e layout refinado.
             Nova função para YouTube ao vivo: ao analisar uma live, o app detecta AO VIVO e oferece BAIXAR DO INÍCIO ATÉ AGORA.
             O ponto final é atualizado e congelado no instante em que o download começa. A transmissão pode continuar no YouTube, mas o arquivo tenta terminar naquele ponto.
-            Método principal: congela a playlist HLS/DVR no instante do clique e transforma essa janela em um snapshot local encerrado. Assim, a live continua no YouTube, mas novos segmentos não entram no arquivo. Mantém fallback yt-dlp para casos sem HLS compatível.
+            NOVO: o botão ANALISAR mostra somente resoluções que o yt-dlp confirmou com formato de vídeo real, URL de mídia e sem indicação de DRM.
+            Links protegidos por DRM ou que exigem autenticação/assinatura ficam marcados como indisponíveis; o aplicativo não tenta contornar proteção.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.21-TIMELINE-DRAG-DIRETO.zip
+            ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip
           fail_on_unmatched_files: true
           overwrite_files: true
