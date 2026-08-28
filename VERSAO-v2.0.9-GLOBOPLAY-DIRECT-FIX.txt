@@ -1,0 +1,25 @@
+EXTRATOR DE VÍDEOS WINDOWS v2.0.9 — GLOBOPLAY DIRECT FIX
+
+Base preservada: Windows v2.0.8 — DOWNLOAD DIRETO estilo Android.
+
+CORREÇÃO GLOBOPLAY
+- A tela de Download continua sem botão ANALISAR.
+- Fluxo visível permanece: colar link -> escolher qualidade -> BAIXAR VÍDEO.
+- Para links do Globoplay, o clique em BAIXAR executa internamente uma validação autenticada da sessão persistente.
+- A sessão/cookies protegidos pelo Windows (DPAPI) são reutilizados no comando de download.
+- O motor escolhe internamente o formato real correspondente a 360p, 480p, 720p, 1080p ou Melhor disponível.
+- A qualidade escolhida usa o formato que o Globoplay realmente confirmou para aquela sessão.
+- Se a sessão estiver expirada, o aplicativo orienta atualizar e salvar a sessão novamente em Configurações.
+- DRM, assinatura, região e outras restrições reais continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+
+CASO DE TESTE
+https://globoplay.globo.com/v/14907582/?s=0
+
+PRESERVADO
+- R7/Record no fluxo direto estilo Android.
+- YouTube e YouTube Live.
+- Editor integrado e timeline.
+- Delete, cortes e união.
+- H.264/H.265, compressão e resolução.
+- Proxy, histórico, FFmpeg, FFprobe e Deno.
+- Layout aprovado da v2.0.8.
