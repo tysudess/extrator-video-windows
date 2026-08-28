@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.4 R7 Selection Fix
+name: Build Windows Portable v2.0.5 R7 HLS TS Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.4-r7-selection-fix-work
+      - v2.0.5-r7-hls-ts-work
 
 permissions:
   contents: write
@@ -94,12 +94,12 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py range_slider.py advanced_editor.py
 
-      - name: Gerar aplicativo v2.0.4 R7 Selection Fix
+      - name: Gerar aplicativo v2.0.5 R7 HLS TS Fix
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v204.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v205.py
 
       - name: Montar portable
         shell: powershell
@@ -113,28 +113,32 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.4-R7-SELECTION-FIX.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.5-R7-HLS-TS-FIX.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.4
+          tag_name: v2.0.5
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.4 - R7 Selection Fix
+          name: Extrator de Vídeos Windows v2.0.5 - R7 HLS/TS Fix
           body: |
-            Extrator de Vídeos Windows Portable v2.0.4 - R7 Selection Fix.
+            Extrator de Vídeos Windows Portable v2.0.5 - R7 HLS/TS Fix.
 
-            Parte exclusivamente da v2.0.3 - R7 PLAYER FIX, preservando layout, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, YouTube, Live DVR, Globoplay e qualidades reais.
+            Parte exclusivamente da v2.0.4 - R7 SELECTION FIX, preservando layout, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, YouTube, Live DVR, Globoplay e qualidades reais.
 
-            CORREÇÃO: após ANALISAR uma página do R7, a qualidade selecionada agora permanece vinculada ao link original da matéria.
-            Na v2.0.3, a análise usava corretamente a mídia interna HLS/MP4 do player, mas o campo de validação guardava essa URL interna. Como o botão BAIXAR comparava esse valor com o link da matéria exibido na tela, ele solicitava uma nova análise mesmo com 540p/480p corretamente selecionado.
-            A v2.0.4 mantém a mídia interna para o motor R7, mas grava o link original da matéria em analyzed_input_url, permitindo que BAIXAR aceite a qualidade já confirmada.
+            CORREÇÕES R7:
+            - limpeza automática quando o link R7 é colado duplicado na mesma linha;
+            - leitura aprofundada do HTML/JSON do player e da player-api para localizar a playlist HLS .m3u8;
+            - suporte ao fluxo HLS composto por segmentos MPEG-TS .ts;
+            - fallback direto pelo FFmpeg quando o yt-dlp não conclui o HLS, mantendo Referer/Origin da matéria;
+            - tentativa de remux para MP4 sem recodificar e fallback para arquivo .ts quando necessário.
 
+            A correção cobre páginas record.r7.com e noticias.r7.com que reproduzem vídeo por HLS/TS.
             DRM, login e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.4-R7-SELECTION-FIX.zip
+            ExtratorVideos-Windows-Portable-v2.0.5-R7-HLS-TS-FIX.zip
           fail_on_unmatched_files: true
           overwrite_files: true
