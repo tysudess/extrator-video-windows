@@ -1,0 +1,17 @@
+Windows v2.0.11 — GLOBOPLAY COOKIE CAPTURE FIX
+
+Correção do erro exibido mesmo com o usuário já autenticado no navegador interno:
+"Nenhum cookie do domínio Globo/Globoplay foi encontrado".
+
+Causa confirmada na v2.0.10:
+- os cookies eram capturados continuamente pelo sinal cookieAdded durante o login;
+- ao clicar em SALVAR E VALIDAR SESSÃO, self.cookies.clear() apagava os cookies já capturados antes da exportação.
+
+Correção v2.0.11:
+- preserva os cookies já observados durante o login;
+- loadAllCookies complementa a coleta de forma assíncrona;
+- até 8 tentativas de leitura antes de declarar ausência de cookies;
+- mantém navegador interno persistente, DPAPI e fallback globo:<id>;
+- não grava senha e não contorna DRM, assinatura ou permissões.
+
+Demais funções da v2.0.10 preservadas.
