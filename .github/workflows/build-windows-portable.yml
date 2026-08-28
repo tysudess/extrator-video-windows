@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.12 Globoplay GLBID Direto
+name: Build Windows Portable v2.0.13 Globoplay Browser Auth
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.12-globoplay-glbid-direct
+      - v2.0.13-globoplay-browser-auth
 
 permissions:
   contents: write
@@ -94,56 +94,54 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -c "from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage; from PySide6.QtWebEngineWidgets import QWebEngineView; print('Qt WebEngine: OK')"
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py range_slider.py advanced_editor.py
+          python -c "from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineUrlRequestInfo, QWebEngineUrlRequestInterceptor; assert hasattr(QWebEngineUrlRequestInfo, 'requestBody'); assert hasattr(QWebEngineUrlRequestInfo, 'httpHeaders'); print('Qt WebEngine request interception: OK')"
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py range_slider.py advanced_editor.py
 
-      - name: Testar GLBID direto e sessão Globoplay
+      - name: Testar captura da autorização real do player Globoplay
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
           @'
-          import refined_layout_v212 as m
+          import json
+          import refined_layout_v213 as m
           from PySide6.QtWidgets import QApplication
 
-          jar = (
-              b'# Netscape HTTP Cookie File\n'
-              b'#HttpOnly_.globo.com\tTRUE\t/\tTRUE\t1999999999\tGLBID\tsessao-teste-123\n'
-          )
-          assert m._glbid_from_cookie_jar(jar) == 'sessao-teste-123'
+          class FakeUrl:
+              def __init__(self, value): self.value = value
+              def toString(self): return self.value
+          class FakeBody:
+              def __init__(self, raw): self.raw = raw
+              def peek(self, _size): return self.raw
+          class FakeInfo:
+              def __init__(self, body=b'', headers=None):
+                  self.body = body
+                  self.headers = headers or {}
+              def requestUrl(self): return FakeUrl('https://playback.video.globo.com/v4/video-session')
+              def requestBody(self): return FakeBody(self.body)
+              def httpHeaders(self): return self.headers
 
-          payload = m._globo_playback_payload('14907582', 'sessao-teste-123')
-          assert payload['video_id'] == '14907582'
-          assert payload['Authorization'] == 'Bearer sessao-teste-123'
-          assert payload['content_protection'] == 'widevine'
+          body = json.dumps({
+              'video_id': '14907582',
+              'Authorization': 'Bearer token-real-do-player-1234567890',
+          }).encode()
+          auth = m._authorization_from_request_info(FakeInfo(body))
+          assert auth == 'Bearer token-real-do-player-1234567890'
 
-          class FakeDate:
-              def isValid(self): return True
-              def toSecsSinceEpoch(self): return 1999999999
-          class FakeCookie:
-              def __init__(self, name, value, domain='.globo.com'):
-                  self._name = name
-                  self._value = value
-                  self._domain = domain
-              def domain(self): return self._domain
-              def path(self): return '/'
-              def isSecure(self): return True
-              def isHttpOnly(self): return True
-              def expirationDate(self): return FakeDate()
-              def name(self): return self._name.encode()
-              def value(self): return self._value.encode()
+          # Fallback por cabeçalho HTTP Authorization.
+          auth2 = m._authorization_from_request_info(FakeInfo(
+              b'{}', {b'Authorization': b'Bearer token-header-1234567890'}
+          ))
+          assert auth2 == 'Bearer token-header-1234567890'
 
-          raw, count = m._cookie_jar_with_preferred_glbid([
-              FakeCookie('outro', 'abc'),
-              FakeCookie('GLBID', 'token-antigo', 'login.globo.com'),
-              FakeCookie('GLBID', 'token-correto', '.globo.com'),
-          ])
-          assert count >= 1
-          assert m._glbid_from_cookie_jar(raw) == 'token-correto'
-          assert raw.count(b'\tGLBID\t') == 1
+          # Fallback por Cookie GLBID visível na própria requisição.
+          auth3 = m._authorization_from_request_info(FakeInfo(
+              b'{}', {b'Cookie': b'foo=1; GLBID=token-cookie-1234567890; bar=2'}
+          ))
+          assert auth3 == 'Bearer token-cookie-1234567890'
 
-          assert m.v210.GloboplayProbeWorker210 is m.GloboplayDirectProbeWorker212
-          assert m.v210.GloboplayLoginDialog is m.GloboplayLoginDialog212
+          assert m.v210.GloboplayProbeWorker210 is m.GloboplayBrowserAuthProbeWorker213
+          assert m.v210.GloboplayLoginDialog is m.GloboplayLoginDialog213
 
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
@@ -151,13 +149,13 @@ jobs:
           assert w.btn_analyze.isHidden()
           assert 'BAIXAR' in w.btn_download.text()
           w.close()
-          print('v2.0.12 GLBID direto: OK')
+          print('v2.0.13 Browser Auth Globoplay: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.12 Globoplay GLBID Direto
+      - name: Gerar aplicativo v2.0.13 Globoplay Browser Auth
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v212.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v213.py
 
       - name: Montar portable
         shell: powershell
@@ -171,27 +169,27 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.12-GLOBOPLAY-GLBID-DIRETO.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.13-GLOBOPLAY-BROWSER-AUTH.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.12
+          tag_name: v2.0.13
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.12 - Globoplay GLBID Direto
+          name: Extrator de Vídeos Windows v2.0.13 - Globoplay Browser Auth
           body: |
-            Extrator de Vídeos Windows Portable v2.0.12 - Globoplay GLBID Direto.
+            Extrator de Vídeos Windows Portable v2.0.13 - Globoplay Browser Auth.
 
             CORREÇÃO PRINCIPAL DO GLOBOPLAY:
-            - identifica explicitamente o cookie GLBID da sessão autenticada;
-            - remove GLBID antigo/duplicado ao salvar a sessão e preserva o token preferencial da raiz Globo;
-            - se GLBID ainda não apareceu, abre automaticamente o vídeo dentro do navegador interno para atualizar a autorização;
-            - a consulta inicial de playback não depende mais da interpretação do cookie jar pelo yt-dlp;
-            - o aplicativo usa GLBID diretamente na sessão de reprodução e só então entrega o manifesto HLS/MPD autorizado ao yt-dlp/FFmpeg;
-            - corrige o cenário em que a conta aparecia conectada, mas o yt-dlp recebia HTTP 401 Unauthorized;
-            - senha não é armazenada;
+            - deixa de depender da existência do cookie GLBID no cookieStore do Qt;
+            - intercepta somente a chamada oficial de playback feita pelo navegador interno;
+            - lê o JSON do POST de video-session sem consumir a requisição do Chromium;
+            - captura a autorização que o próprio player acabou de usar;
+            - aceita também Authorization em cabeçalho ou GLBID presente no Cookie da requisição como fallback;
+            - salva a autorização de sessão protegida pelo Windows/DPAPI, nunca a senha;
+            - reutiliza essa autorização para pedir a sessão oficial de reprodução e entrega apenas o manifesto HLS/MPD autorizado ao downloader;
             - DRM, assinatura e permissões continuam sendo respeitados e não são contornados.
 
             PRESERVADO:
@@ -203,6 +201,6 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.12-GLOBOPLAY-GLBID-DIRETO.zip
+            ExtratorVideos-Windows-Portable-v2.0.13-GLOBOPLAY-BROWSER-AUTH.zip
           fail_on_unmatched_files: true
           overwrite_files: true
