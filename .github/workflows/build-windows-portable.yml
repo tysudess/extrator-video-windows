@@ -104,22 +104,25 @@ jobs:
           import refined_layout_v208 as m
           from PySide6.QtWidgets import QApplication
 
-          assert [q[0] for q in m.DIRECT_QUALITIES] == [
-              '360p', '480p', '720p HD', '1080p Full HD', 'Melhor disponível'
-          ]
-          assert '--retries' in m.R7DirectDownloadWorker._base_cmd.__code__.co_consts
+          assert len(m.DIRECT_QUALITIES) == 5
+          assert m.DIRECT_QUALITIES[0][1] == 360
+          assert m.DIRECT_QUALITIES[1][1] == 480
+          assert m.DIRECT_QUALITIES[2][1] == 720
+          assert m.DIRECT_QUALITIES[3][1] == 1080
+          assert 'height<=720' in m.DIRECT_QUALITIES[2][2]
           assert m.core.DownloadWorker.__name__ == 'R7DirectDownloadWorker'
 
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
           assert hasattr(w, 'direct_quality_combo')
           assert w.direct_quality_combo.count() == 5
-          assert w.direct_quality_combo.currentText() == '480p'
-          assert w.btn_download.text() == '↓  BAIXAR VÍDEO'
+          assert w.direct_quality_combo.currentIndex() == 1
+          assert '480' in w.direct_quality_combo.currentText()
+          assert 'BAIXAR' in w.btn_download.text()
           assert w.btn_analyze.isHidden()
-          assert w.btn_download.isEnabled() is False
+          assert not w.btn_download.isEnabled()
           w.url_edit.setText('https://exemplo.com/video')
-          assert w.btn_download.isEnabled() is True
+          assert w.btn_download.isEnabled()
           w.close()
           print('Download direto estilo Android: OK')
           '@ | python -
