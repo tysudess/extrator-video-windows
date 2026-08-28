@@ -2,6 +2,7 @@ import json
 import re
 
 from PySide6.QtCore import QTimer, QUrl
+from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWidgets import QMessageBox
 
 import refined_layout_v213 as v213
@@ -103,6 +104,13 @@ class GloboplayLoginDialog214(v213.GloboplayLoginDialog213):
         self._auto_player_attempts = 0
         self._auto_player_active = False
         self._last_auto_result = ''
+        try:
+            self.page.settings().setAttribute(
+                QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture,
+                False,
+            )
+        except Exception:
+            pass
         try:
             self.page.loadFinished.connect(self._page_loaded_v214)
         except Exception:
@@ -224,7 +232,8 @@ class GloboplayLoginDialog214(v213.GloboplayLoginDialog213):
             self,
             core.APP_NAME,
             'A conta está conectada, mas esta página do Globoplay não iniciou o player nem gerou a sessão de reprodução.\n\n'
-            'A v2.0.14 já tentou automaticamente o elemento <video>, botões Play/Reproduzir/Assistir e a área central do player. '
+            'A v2.0.14 já tentou automaticamente o elemento <video>, botões Play/Reproduzir/Assistir e a área central do player, '
+            'com a exigência de gesto do usuário desativada apenas nesta janela interna. '
             'Se esta mensagem continuar aparecendo, envie uma nova captura desta janela para verificarmos o tipo específico de player da página.'
         )
 
