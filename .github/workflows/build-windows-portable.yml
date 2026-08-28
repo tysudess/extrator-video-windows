@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.9 Globoplay Direct Fix
+name: Build Windows Portable v2.0.10 Globoplay Login Interno
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.9-globoplay-direct-fix
+      - v2.0.10-globoplay-internal-login
 
 permissions:
   contents: write
@@ -90,59 +90,60 @@ jobs:
           & "bin/ffmpeg.exe" -version
           & "bin/ffprobe.exe" -version
 
-      - name: Verificar icone e sintaxe
+      - name: Verificar Qt WebEngine e sintaxe
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py range_slider.py advanced_editor.py
+          python -c "from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage; from PySide6.QtWebEngineWidgets import QWebEngineView; print('Qt WebEngine: OK')"
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py range_slider.py advanced_editor.py
 
-      - name: Testar download direto e sessão Globoplay
+      - name: Testar login interno e fallback Globoplay
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
+          $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
           @'
           from pathlib import Path
-          import refined_layout_v209 as m
+          import refined_layout_v210 as m
           from PySide6.QtWidgets import QApplication
 
           link = 'https://globoplay.globo.com/v/14907582/?s=0'
+          assert m._extract_globo_id(link) == '14907582'
           assert m.v201._is_globoplay_url(link)
           assert len(m.v208.DIRECT_QUALITIES) == 5
-          assert m.v208.DIRECT_QUALITIES[1][0] == '480p'
 
-          payload = {
-              'available_qualities': [
-                  {'height': 1080, 'label': '1080p', 'selector': 'f1080', 'compat_selector': 'c1080'},
-                  {'height': 720, 'label': '720p', 'selector': 'f720', 'compat_selector': 'c720'},
-                  {'height': 480, 'label': '480p', 'selector': 'f480', 'compat_selector': 'c480'},
-                  {'height': 360, 'label': '360p', 'selector': 'f360', 'compat_selector': 'c360'},
-              ]
-          }
-          assert m._select_globoplay_quality(payload, 0)['height'] == 360
-          assert m._select_globoplay_quality(payload, 1)['height'] == 480
-          assert m._select_globoplay_quality(payload, 2)['height'] == 720
-          assert m._select_globoplay_quality(payload, 3)['height'] == 1080
-          assert m._select_globoplay_quality(payload, 4)['height'] == 1080
-
-          # Simula uma sessão persistente já descriptografada e confirma que
-          # o DownloadWorker ativo da v2.0.9 injeta --cookies no Globoplay.
+          # Confirma que globo:<id> também recebe a sessão persistente.
           m.v202._write_runtime_cookie_file = lambda: Path(r'C:\Temp\globoplay-session.txt')
-          worker = m.core.DownloadWorker(
-              link, 0, '', format_selector='f480', compat_selector='c480'
-          )
-          cmd = worker._base_cmd('f480')
-          assert '--cookies' in cmd, cmd
-          cookie_index = cmd.index('--cookies')
-          assert 'globoplay-session.txt' in cmd[cookie_index + 1]
+          cookie_args = m.v201._globoplay_cookie_args('globo:14907582')
+          assert cookie_args[0] == '--cookies'
+          assert 'globoplay-session.txt' in cookie_args[1]
+
+          # Testa a conversão do cookie do navegador interno para Netscape.
+          class FakeDate:
+              def isValid(self): return True
+              def toSecsSinceEpoch(self): return 1999999999
+          class FakeCookie:
+              def domain(self): return '.globo.com'
+              def path(self): return '/'
+              def isSecure(self): return True
+              def isHttpOnly(self): return True
+              def expirationDate(self): return FakeDate()
+              def name(self): return b'globo_test_session'
+              def value(self): return b'abc123'
+          raw, count = m._cookie_jar_from_qt([FakeCookie()])
+          assert count == 1
+          assert b'Netscape HTTP Cookie File' in raw
+          assert b'globo_test_session' in raw
+          assert b'abc123' in raw
 
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
-          assert hasattr(w, 'direct_quality_combo')
-          assert w.direct_quality_combo.currentIndex() == 1
+          assert hasattr(w, 'btn_globoplay_internal_login')
+          assert hasattr(w, 'globoplay_internal_status')
           assert w.btn_analyze.isHidden()
           assert 'BAIXAR' in w.btn_download.text()
           w.close()
-          print('Globoplay direct + sessão persistente: OK')
+          print('Globoplay login interno + fallback globo:id: OK')
           '@ | python -
 
       - name: Diagnosticar link Globoplay informado
@@ -150,11 +151,12 @@ jobs:
         shell: powershell
         run: |
           & "bin/yt-dlp.exe" --no-playlist --skip-download --socket-timeout 30 "https://globoplay.globo.com/v/14907582/?s=0"
+          & "bin/yt-dlp.exe" --no-playlist --skip-download --socket-timeout 30 "globo:14907582"
 
-      - name: Gerar aplicativo v2.0.9 Globoplay Direct Fix
+      - name: Gerar aplicativo v2.0.10 Globoplay Login Interno
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v209.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v210.py
 
       - name: Montar portable
         shell: powershell
@@ -168,37 +170,39 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.9-GLOBOPLAY-DIRECT-FIX.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.10-GLOBOPLAY-LOGIN-INTERNO.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.9
+          tag_name: v2.0.10
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.9 - Globoplay Direct Fix
+          name: Extrator de Vídeos Windows v2.0.10 - Globoplay Login Interno
           body: |
-            Extrator de Vídeos Windows Portable v2.0.9 - Globoplay Direct Fix.
+            Extrator de Vídeos Windows Portable v2.0.10 - Globoplay Login Interno Persistente.
 
-            CORREÇÃO GLOBOPLAY:
-            - mantém a tela de Download Direto da v2.0.8, sem botão ANALISAR;
-            - ao clicar em BAIXAR num link do Globoplay, faz internamente a validação autenticada da sessão persistente;
-            - reutiliza a sessão/cookies protegidos pelo Windows (DPAPI);
-            - escolhe internamente a melhor resolução compatível com 360p, 480p, 720p, 1080p ou Melhor disponível;
-            - usa o seletor de formato real confirmado pelo Globoplay antes de iniciar o download;
-            - se a sessão tiver expirado, orienta atualizar e salvar a sessão novamente;
-            - não tenta contornar DRM, assinatura ou outras restrições reais.
+            CORREÇÃO PRINCIPAL DO GLOBOPLAY:
+            - login do Globoplay passa a abrir dentro do próprio aplicativo usando Qt WebEngine;
+            - perfil do navegador interno é persistente em APPDATA;
+            - não depende mais de copiar cookies do Chrome/Edge nem de fechar o navegador externo;
+            - após o login, o aplicativo exporta os cookies Globo/Globoplay para formato Netscape e protege a sessão com DPAPI;
+            - a sessão é validada antes de ser aceita;
+            - ao baixar, tenta primeiro o link normal e, quando aplicável, o fallback globo:<id> com a mesma sessão;
+            - mantém o fluxo colar link -> escolher qualidade -> BAIXAR VÍDEO, sem botão ANALISAR;
+            - senha não é gravada pelo aplicativo; ela é digitada somente na página oficial da Globo no navegador interno;
+            - DRM, assinatura e permissões continuam sendo respeitados.
 
             PRESERVADO:
             - R7/Record no fluxo direto estilo Android;
             - YouTube e YouTube Live;
             - Editor, timeline, Delete, cortes e união;
             - H.264/H.265, compressão, resolução, proxy, histórico, FFmpeg/FFprobe/Deno;
-            - layout aprovado da v2.0.8.
+            - layout aprovado da v2.0.8/v2.0.9.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.9-GLOBOPLAY-DIRECT-FIX.zip
+            ExtratorVideos-Windows-Portable-v2.0.10-GLOBOPLAY-LOGIN-INTERNO.zip
           fail_on_unmatched_files: true
           overwrite_files: true
