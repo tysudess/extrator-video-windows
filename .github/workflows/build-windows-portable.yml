@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.7 R7 Android Flow
+name: Build Windows Portable v2.0.8 Download Direto
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.7-r7-android-flow-work
+      - v2.0.8-direct-download-work
 
 permissions:
   contents: write
@@ -94,37 +94,40 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py range_slider.py advanced_editor.py
 
-      - name: Testar fluxo R7 baseado no Android
+      - name: Testar fluxo direto estilo Android
         shell: powershell
         run: |
+          $env:QT_QPA_PLATFORM = 'offscreen'
           @'
-          import refined_layout_v207 as m
-          html = '''
-          <html><body>
-          <script>var x="https://cdn.exemplo.com/video-principal.m3u8";</script>
-          <a href="https://site.exemplo.com/noticia">x</a>
-          <iframe src="https://player.exemplo.com/embed/123"></iframe>
-          </body></html>
-          '''
-          c = m._android_extract_candidates(html, 'https://noticias.r7.com/materia/')
-          assert c[0] == 'https://cdn.exemplo.com/video-principal.m3u8', c
-          assert len(c) <= 15
-          cmd = m._r7_probe_command('https://noticias.r7.com/materia/', '', '')
-          assert '--force-ipv4' in cmd
-          assert '--retries' in cmd and cmd[cmd.index('--retries') + 1] == '10'
-          assert '--fragment-retries' in cmd and cmd[cmd.index('--fragment-retries') + 1] == '10'
-          assert '--socket-timeout' in cmd and cmd[cmd.index('--socket-timeout') + 1] == '30'
-          assert m.OriginalDownloadWorker.__name__ == 'DownloadWorker'
-          assert m.core.DownloadWorker.__name__ == 'R7AndroidDownloadWorker'
-          print('R7 Android Flow: OK')
+          import refined_layout_v208 as m
+          from PySide6.QtWidgets import QApplication
+
+          assert [q[0] for q in m.DIRECT_QUALITIES] == [
+              '360p', '480p', '720p HD', '1080p Full HD', 'Melhor disponível'
+          ]
+          assert '--retries' in m.R7DirectDownloadWorker._base_cmd.__code__.co_consts
+          assert m.core.DownloadWorker.__name__ == 'R7DirectDownloadWorker'
+
+          app = QApplication.instance() or QApplication([])
+          w = m.core.MainWindow()
+          assert hasattr(w, 'direct_quality_combo')
+          assert w.direct_quality_combo.count() == 5
+          assert w.direct_quality_combo.currentText() == '480p'
+          assert w.btn_download.text() == '↓  BAIXAR VÍDEO'
+          assert w.btn_analyze.isHidden()
+          assert w.btn_download.isEnabled() is False
+          w.url_edit.setText('https://exemplo.com/video')
+          assert w.btn_download.isEnabled() is True
+          w.close()
+          print('Download direto estilo Android: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.7 R7 Android Flow
+      - name: Gerar aplicativo v2.0.8 Download Direto
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v207.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v208.py
 
       - name: Montar portable
         shell: powershell
@@ -138,36 +141,36 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.7-R7-ANDROID-FLOW.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.8-DOWNLOAD-DIRETO.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.7
+          tag_name: v2.0.8
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.7 - R7 Android Flow
+          name: Extrator de Vídeos Windows v2.0.8 - Download Direto estilo Android
           body: |
-            Extrator de Vídeos Windows Portable v2.0.7 - R7 Android Flow.
+            Extrator de Vídeos Windows Portable v2.0.8 - Download Direto estilo Android.
 
-            Esta versão parte da v2.0.6, mas remove do caminho ativo do R7 a dependência do player-api.r7.com e do player.r7.com/video/i/ID que estavam causando vídeo relacionado incorreto e HTTP 404.
+            NOVO FLUXO DE DOWNLOAD:
+            - remove o botão ANALISAR da tela de Download;
+            - fluxo igual ao Android: colar link -> escolher qualidade -> BAIXAR VÍDEO;
+            - qualidades fixas: 360p, 480p, 720p HD, 1080p Full HD e Melhor disponível;
+            - 480p permanece como padrão;
+            - as escolhas usam os mesmos seletores de formato da Android v1.9.17;
+            - YouTube Live continua sendo detectado internamente, sem botão de análise, preservando o modo do início até o momento atual;
+            - Globoplay continua usando a sessão persistente protegida pelo Windows;
+            - R7 continua no fluxo matéria -> HTML -> até 15 candidatos com Referer;
+            - no R7, uma indicação genérica de DRM na tentativa inicial não interrompe prematuramente a busca pelos candidatos, igual ao comportamento Android;
+            - URLs R7 duplicadas continuam sendo limpas automaticamente.
 
-            O fluxo R7 passa a reproduzir o comportamento comprovado da Android v1.9.17:
-            - tenta primeiro o link original da matéria diretamente no yt-dlp;
-            - usa --force-ipv4, 10 retries, 10 fragment-retries e socket-timeout 30;
-            - se a tentativa principal falhar, baixa o HTML da matéria;
-            - extrai até 15 candidatos na mesma ordem do Android;
-            - testa cada candidato com Referer apontando para a matéria original;
-            - ANALISAR segue a mesma ordem e mantém analyzed_input_url vinculado ao link original;
-            - o candidato confirmado na análise é priorizado no download;
-            - URL R7 duplicada continua sendo corrigida automaticamente.
-
-            Globoplay, sessão persistente, YouTube, Live DVR, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão e proxy permanecem preservados.
-            DRM e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+            Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, histórico, FFmpeg/FFprobe/Deno e demais funções permanecem preservados.
+            DRM confirmado e demais restrições reais continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.7-R7-ANDROID-FLOW.zip
+            ExtratorVideos-Windows-Portable-v2.0.8-DOWNLOAD-DIRETO.zip
           fail_on_unmatched_files: true
           overwrite_files: true
