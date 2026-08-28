@@ -1,0 +1,12 @@
+EXTRATOR DE VÍDEOS WINDOWS v2.0.10 — GLOBOPLAY LOGIN INTERNO
+
+- Mantém o fluxo Download Direto: colar link -> escolher qualidade -> BAIXAR VÍDEO.
+- Adiciona login do Globoplay dentro do próprio aplicativo usando Qt WebEngine.
+- Usa perfil persistente do navegador interno em APPDATA.
+- Exporta cookies Globo/Globoplay para a sessão protegida por DPAPI usada pelo yt-dlp.
+- Não depende mais da leitura de cookies de Chrome/Edge nem de fechar navegador externo.
+- Valida a sessão antes de aceitá-la.
+- Tenta o link normal do Globoplay e, quando aplicável, o fallback globo:<id> usando a mesma sessão.
+- Não grava login ou senha no código, GitHub ou Release.
+- DRM, assinatura e permissões da conta continuam sendo respeitados.
+- R7/Record, YouTube, YouTube Live, Editor, timeline, cortes, união, H.264/H.265, compressão, proxy e demais funções permanecem preservados.
