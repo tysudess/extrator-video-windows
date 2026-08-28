@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.2 Sessao Globoplay Persistente
+name: Build Windows Portable v2.0.3 R7 Player Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.2-globoplay-session
+      - v2.0.3-r7-player-fix
 
 permissions:
   contents: write
@@ -94,12 +94,12 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py range_slider.py advanced_editor.py
 
-      - name: Gerar aplicativo v2.0.2 Sessao Globoplay Persistente
+      - name: Gerar aplicativo v2.0.3 R7 Player Fix
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v202.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v203.py
 
       - name: Montar portable
         shell: powershell
@@ -113,29 +113,29 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.2-SESSAO-GLOBOPLAY-PERSISTENTE.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.3-R7-PLAYER-FIX.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.2
+          tag_name: v2.0.3
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.2 - Sessão Globoplay Persistente
+          name: Extrator de Vídeos Windows v2.0.3 - R7 Player Fix
           body: |
-            Extrator de Vídeos Windows Portable v2.0.2 - Sessão Globoplay Persistente.
+            Extrator de Vídeos Windows Portable v2.0.3 - R7 Player Fix.
 
-            Parte exclusivamente da v2.0.1 - GLOBOPLAY LOGIN, preservando layout, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, YouTube, Live DVR e qualidades reais.
+            Parte exclusivamente da v2.0.2 - SESSÃO GLOBOPLAY PERSISTENTE, preservando layout, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, YouTube, Live DVR, Globoplay e qualidades reais.
 
-            NOVO: depois do login normal no Globoplay, o aplicativo pode capturar uma vez a sessão autenticada do navegador e armazená-la criptografada pelo Windows usando DPAPI.
-            ANALISAR e BAIXAR passam a reutilizar essa sessão persistente em links do Globoplay, evitando depender da leitura do banco de cookies do navegador em cada download.
-            A sessão protegida pode ser atualizada ou apagada pelo usuário em Configurações.
+            NOVO: fallback específico para páginas de vídeo do R7/Noticias R7.
+            O aplicativo passa a localizar o ID interno do player R7, consultar a player-api.r7.com quando necessário e priorizar mídia HLS/MP4 real para ANALISAR e BAIXAR.
+            O Referer da matéria é preservado nas tentativas de download e existe modo de compatibilidade quando o formato principal não é aceito.
 
-            O downloader utiliza sessão/cookies autenticados, não a senha da conta. Nenhuma senha é gravada em texto puro.
-            DRM, assinatura sem acesso, bloqueio regional e outras restrições continuam sendo apenas detectados; o aplicativo não tenta contornar DRM ou mecanismos de proteção.
+            A correção foi criada para páginas atuais do padrão noticias.r7.com/.../video/..., incluindo o JR 24 Horas informado como caso de teste.
+            DRM, login e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.2-SESSAO-GLOBOPLAY-PERSISTENTE.zip
+            ExtratorVideos-Windows-Portable-v2.0.3-R7-PLAYER-FIX.zip
           fail_on_unmatched_files: true
           overwrite_files: true
