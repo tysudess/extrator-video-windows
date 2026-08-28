@@ -1,3 +1,22 @@
+EXTRATOR DE VÍDEOS WINDOWS v2.0.4 — R7 SELECTION FIX
+EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY + R7
+
+NOVIDADE v2.0.4 — CORREÇÃO DA QUALIDADE SELECIONADA NO R7
+- Parte exclusivamente da v2.0.3 — R7 PLAYER FIX.
+- Nenhuma função ou layout aprovado foi removido.
+- Corrigida a validação do botão BAIXAR após ANALISAR uma página do R7.
+- Na v2.0.3 o motor encontrava corretamente a mídia interna HLS/MP4 e mostrava as qualidades reais, mas analyzed_input_url ficava com o endereço interno do player.
+- Como o botão BAIXAR compara analyzed_input_url com o link visível da matéria, ele pedia uma nova análise mesmo com 540p/480p corretamente selecionado.
+- A v2.0.4 mantém a mídia interna do R7 para o motor, mas vincula a análise ao link original da matéria.
+- A qualidade marcada passa a ser aceita normalmente pelo botão BAIXAR.
+- O fallback R7 Player Fix da v2.0.3 continua integralmente preservado.
+- Globoplay, YouTube, Live, Editor, timeline, proxy, H.264/H.265, compressão e demais funções permanecem inalterados.
+- DRM, login, região e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+
+======================================================================
+BASE v2.0.3 PRESERVADA
+======================================================================
+
 EXTRATOR DE VÍDEOS WINDOWS v2.0.3 — R7 PLAYER FIX
 EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY + R7
 
