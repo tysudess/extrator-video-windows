@@ -12,6 +12,7 @@ jobs:
       - name: Testar busca R7 para recuperar URL incompleta
         shell: python
         run: |
+          import html
           import re
           import urllib.parse
           import urllib.request
@@ -19,6 +20,7 @@ jobs:
           broken = 'https://noticias.r7.com/jr-24h/conteudo-exclusivo/video/prefeitura-de-sao-paulo-divulga-novas-regras-para-uso-de-patinetes-eletrico/'
           slug = urllib.parse.urlparse(broken).path.rstrip('/').split('/')[-1]
           terms = slug.replace('-', ' ')
+          wanted = set(x for x in re.split(r'[^a-z0-9]+', slug.lower()) if len(x) >= 4)
           queries = [
               'https://busca.r7.com/?q=' + urllib.parse.quote_plus(terms),
               'https://noticias.r7.com/busca/?q=' + urllib.parse.quote_plus(terms),
@@ -29,17 +31,31 @@ jobs:
               req = urllib.request.Request(url, headers={'User-Agent': ua, 'Accept-Language':'pt-BR,pt;q=0.9'})
               try:
                   with urllib.request.urlopen(req, timeout=30) as r:
-                      raw = r.read().decode(r.headers.get_content_charset() or 'utf-8', 'replace')
+                      raw = html.unescape(r.read().decode(r.headers.get_content_charset() or 'utf-8', 'replace')).replace('\\/','/')
                       print('HTTP', r.status, 'bytes', len(raw), 'final', r.geturl())
                       links = []
                       seen = set()
-                      for m in re.finditer(r'https?://[^\s\"\'<>]+', raw, re.I):
-                          x = m.group(0).replace('\\/','/').replace('&amp;','&')
-                          if 'r7.com/' in x and x not in seen:
-                              seen.add(x); links.append(x)
+                      patterns = [
+                          r'https?://[^\s\"\'<>]+',
+                          r'href=[\"\']([^\"\']+)[\"\']',
+                      ]
+                      for pi, pat in enumerate(patterns):
+                          for m in re.finditer(pat, raw, re.I):
+                              x = m.group(0) if pi == 0 else m.group(1)
+                              x = urllib.parse.urljoin(r.geturl(), x).replace('&amp;','&')
+                              x = x.rstrip('\\,;)}]')
+                              if 'r7.com/' in x and x not in seen:
+                                  seen.add(x); links.append(x)
                       print('R7 links', len(links))
-                      for x in links[:50]:
-                          if 'patinete' in x.lower() or 'prefeitura-de-sao-paulo' in x.lower():
-                              print('MATCH', x)
+                      scored = []
+                      for x in links:
+                          low = urllib.parse.unquote(x.lower())
+                          tokens = set(t for t in re.split(r'[^a-z0-9]+', low) if len(t) >= 4)
+                          overlap = len(wanted & tokens)
+                          if overlap:
+                              scored.append((overlap, x))
+                      scored.sort(key=lambda z: (-z[0], len(z[1])))
+                      for score, x in scored[:30]:
+                          print('SCORE', score, x)
               except Exception as e:
                   print(type(e).__name__, e)
