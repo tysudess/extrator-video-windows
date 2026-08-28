@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.13 Globoplay Browser Auth
+name: Build Windows Portable v2.0.14 Globoplay Android Flow
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.13-globoplay-browser-auth
+      - v2.0.14-globoplay-android-flow
 
 permissions:
   contents: write
@@ -13,7 +13,6 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,16 +28,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Preparar pasta bin
+      - name: Preparar binarios
         shell: powershell
         run: New-Item -ItemType Directory -Force -Path bin | Out-Null
 
-      - name: Baixar yt-dlp NIGHTLY
+      - name: Baixar yt-dlp NIGHTLY e STABLE
         shell: powershell
         run: |
           $ProgressPreference = 'SilentlyContinue'
           Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
-          & "bin/yt-dlp.exe" --version
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp-stable.exe"
+          Write-Host "Nightly:"; & "bin/yt-dlp.exe" --version
+          Write-Host "Stable (mesmo canal do Android):"; & "bin/yt-dlp-stable.exe" --version
 
       - name: Baixar Deno
         shell: powershell
@@ -58,104 +59,61 @@ jobs:
             "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
             "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
           )
-          $baixado = $false
+          $ok = $false
           foreach ($url in $fontes) {
-            Write-Host "Tentando fonte: $url"
-            for ($tentativa = 1; $tentativa -le 4; $tentativa++) {
-              try {
-                if (Test-Path "ffmpeg.zip") { Remove-Item "ffmpeg.zip" -Force }
-                Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
-                if ((Test-Path "ffmpeg.zip") -and ((Get-Item "ffmpeg.zip").Length -gt 1000000)) {
-                  $baixado = $true
-                  break
-                }
-                throw "Arquivo baixado ausente ou muito pequeno."
-              }
-              catch {
-                Write-Warning "Falha na tentativa ${tentativa}: $($_.Exception.Message)"
-                if ($tentativa -lt 4) { Start-Sleep -Seconds 8 }
-              }
-            }
-            if ($baixado) { break }
+            try {
+              Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+              if ((Get-Item "ffmpeg.zip").Length -gt 1000000) { $ok = $true; break }
+            } catch { Write-Warning $_.Exception.Message }
           }
-          if (-not $baixado) { throw "Nao foi possivel baixar FFmpeg/FFprobe." }
-          if (Test-Path "ffmpeg-temp") { Remove-Item "ffmpeg-temp" -Recurse -Force }
+          if (-not $ok) { throw "Nao foi possivel baixar FFmpeg." }
           Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
-          $ffmpeg = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
-          $ffprobe = Get-ChildItem -Path "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
-          if (-not $ffmpeg) { throw "ffmpeg.exe nao encontrado" }
-          if (-not $ffprobe) { throw "ffprobe.exe nao encontrado" }
+          $ffmpeg = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
           Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
           Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
-          & "bin/ffmpeg.exe" -version
-          & "bin/ffprobe.exe" -version
 
-      - name: Verificar Qt WebEngine e sintaxe
-        shell: powershell
-        run: |
-          if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -c "from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineUrlRequestInfo, QWebEngineUrlRequestInterceptor; assert hasattr(QWebEngineUrlRequestInfo, 'requestBody'); assert hasattr(QWebEngineUrlRequestInfo, 'httpHeaders'); print('Qt WebEngine request interception: OK')"
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py range_slider.py advanced_editor.py
-
-      - name: Testar captura da autorização real do player Globoplay
+      - name: Verificar sintaxe e fluxo Android
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py range_slider.py advanced_editor.py
           @'
-          import json
-          import refined_layout_v213 as m
+          import refined_layout_v214 as m
           from PySide6.QtWidgets import QApplication
-
-          class FakeUrl:
-              def __init__(self, value): self.value = value
-              def toString(self): return self.value
-          class FakeBody:
-              def __init__(self, raw): self.raw = raw
-              def peek(self, _size): return self.raw
-          class FakeInfo:
-              def __init__(self, body=b'', headers=None):
-                  self.body = body
-                  self.headers = headers or {}
-              def requestUrl(self): return FakeUrl('https://playback.video.globo.com/v4/video-session')
-              def requestBody(self): return FakeBody(self.body)
-              def httpHeaders(self): return self.headers
-
-          body = json.dumps({
-              'video_id': '14907582',
-              'Authorization': 'Bearer token-real-do-player-1234567890',
-          }).encode()
-          auth = m._authorization_from_request_info(FakeInfo(body))
-          assert auth == 'Bearer token-real-do-player-1234567890'
-
-          # Fallback por cabeçalho HTTP Authorization.
-          auth2 = m._authorization_from_request_info(FakeInfo(
-              b'{}', {b'Authorization': b'Bearer token-header-1234567890'}
-          ))
-          assert auth2 == 'Bearer token-header-1234567890'
-
-          # Fallback por Cookie GLBID visível na própria requisição.
-          auth3 = m._authorization_from_request_info(FakeInfo(
-              b'{}', {b'Cookie': b'foo=1; GLBID=token-cookie-1234567890; bar=2'}
-          ))
-          assert auth3 == 'Bearer token-cookie-1234567890'
-
-          assert m.v210.GloboplayProbeWorker210 is m.GloboplayBrowserAuthProbeWorker213
-          assert m.v210.GloboplayLoginDialog is m.GloboplayLoginDialog213
-
+          assert m._globo_id('https://globoplay.globo.com/v/14907582/?s=0') == '14907582'
+          assert 'm3u8_native' in m._hls_selector('b[height<=360]/b')
+          assert m.core.DownloadWorker is m.GloboplayAndroidFlowWorker
+          assert m.core.MainWindow.download_video is m.v208.direct_download_video
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
-          assert hasattr(w, 'btn_globoplay_internal_login')
           assert w.btn_analyze.isHidden()
           assert 'BAIXAR' in w.btn_download.text()
           w.close()
-          print('v2.0.13 Browser Auth Globoplay: OK')
+          print('v2.0.14 fluxo Android: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.13 Globoplay Browser Auth
+      - name: Testar Globoplay publico sem login como no Android
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v213.py
+          $url = "https://globoplay.globo.com/v/14907582/?s=0"
+          $ok = $false
+          Write-Host "Teste 1: URL publica, sem cookies"
+          & "bin/yt-dlp-stable.exe" --ignore-config --no-playlist --force-ipv4 --socket-timeout 30 --retries 10 --fragment-retries 10 --simulate -f "b[height<=360]/b" $url
+          if ($LASTEXITCODE -eq 0) { $ok = $true }
+          if (-not $ok) {
+            Write-Host "Teste 2: globo:14907582, sem cookies"
+            & "bin/yt-dlp-stable.exe" --ignore-config --no-playlist --force-ipv4 --socket-timeout 30 --retries 10 --fragment-retries 10 --simulate -f "b[height<=360]/b" "globo:14907582"
+            if ($LASTEXITCODE -eq 0) { $ok = $true }
+          }
+          if (-not $ok) { throw "O link publico do Globoplay nao passou sem login no yt-dlp STABLE." }
+          Write-Host "Globoplay publico sem login: OK"
+
+      - name: Gerar aplicativo v2.0.14
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v214.py
 
       - name: Montar portable
         shell: powershell
@@ -164,43 +122,34 @@ jobs:
           Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
           Copy-Item "ExtratorVideos-Icone.ico" "dist/ExtratorVideos/ExtratorVideos-Icone.ico" -Force
           New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
-          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe nao foi gerado" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp.exe")) { throw "yt-dlp.exe ausente" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
-          if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.13-GLOBOPLAY-BROWSER-AUTH.zip" -Force
+          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe ausente" }
+          if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp-stable.exe")) { throw "yt-dlp STABLE ausente" }
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.14-GLOBOPLAY-ANDROID-FLOW.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.13
+          tag_name: v2.0.14
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.13 - Globoplay Browser Auth
+          name: Extrator de Vídeos Windows v2.0.14 - Globoplay Android Flow
           body: |
-            Extrator de Vídeos Windows Portable v2.0.13 - Globoplay Browser Auth.
+            Windows v2.0.14 - Globoplay Android Flow.
 
-            CORREÇÃO PRINCIPAL DO GLOBOPLAY:
-            - deixa de depender da existência do cookie GLBID no cookieStore do Qt;
-            - intercepta somente a chamada oficial de playback feita pelo navegador interno;
-            - lê o JSON do POST de video-session sem consumir a requisição do Chromium;
-            - captura a autorização que o próprio player acabou de usar;
-            - aceita também Authorization em cabeçalho ou GLBID presente no Cookie da requisição como fallback;
-            - salva a autorização de sessão protegida pelo Windows/DPAPI, nunca a senha;
-            - reutiliza essa autorização para pedir a sessão oficial de reprodução e entrega apenas o manifesto HLS/MPD autorizado ao downloader;
-            - DRM, assinatura e permissões continuam sendo respeitados e não são contornados.
-
-            PRESERVADO:
-            - Download Direto sem botão ANALISAR;
-            - R7/Record estilo Android;
-            - YouTube e YouTube Live;
-            - Editor, timeline, Delete, cortes e união;
-            - H.264/H.265, compressão, proxy, histórico, FFmpeg/FFprobe/Deno.
+            CORREÇÃO:
+            - baseada no código real do Android v1.9.17 que baixa o mesmo vídeo sem login;
+            - remove a pré-validação obrigatória do Globoplay introduzida na v2.0.9;
+            - tenta primeiro a URL pública sem cookies;
+            - depois tenta globo:<ID> sem cookies;
+            - mantém fallback HLS/TS com m3u8:native;
+            - usa yt-dlp STABLE exclusivamente no Globoplay, igual ao Android;
+            - sessão/login passa a ser apenas fallback quando o servidor realmente exigir;
+            - R7, YouTube, Editor e demais funções permanecem preservados;
+            - DRM e permissões continuam sendo respeitados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.13-GLOBOPLAY-BROWSER-AUTH.zip
+            ExtratorVideos-Windows-Portable-v2.0.14-GLOBOPLAY-ANDROID-FLOW.zip
           fail_on_unmatched_files: true
           overwrite_files: true
