@@ -1,3 +1,23 @@
+EXTRATOR DE VÍDEOS WINDOWS v2.0.2 — SESSÃO GLOBOPLAY PERSISTENTE
+EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY
+
+NOVIDADE v2.0.2 — SESSÃO AUTENTICADA PERSISTENTE
+- Parte exclusivamente da v2.0.1 — GLOBOPLAY LOGIN.
+- Nenhuma função ou layout aprovado foi removido.
+- Em Configurações foi adicionado o cartão “Globoplay — sessão persistente protegida pelo Windows”.
+- Depois do login normal no Globoplay, o usuário pode clicar em “Salvar sessão autenticada”.
+- A sessão/cookies autenticados são capturados uma vez e armazenados criptografados pelo Windows usando DPAPI.
+- A sessão protegida fica vinculada ao usuário do Windows que a salvou.
+- ANALISAR e BAIXAR passam a usar a sessão persistente em links do Globoplay.
+- Depois de salva, o aplicativo deixa de depender da leitura do banco de cookies do navegador em cada download.
+- A sessão pode ser atualizada repetindo o login/captura ou apagada em Configurações.
+- O downloader usa sessão/cookies autenticados; a senha da conta não precisa ser gravada em texto puro.
+- DRM, assinatura sem acesso, bloqueio regional e outras restrições continuam sendo apenas detectados; o aplicativo não tenta contornar DRM ou mecanismos de proteção.
+
+======================================================================
+BASE v2.0.1 PRESERVADA
+======================================================================
+
 EXTRATOR DE VÍDEOS WINDOWS v2.0.1 — GLOBOPLAY LOGIN
 EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY
 
@@ -8,7 +28,6 @@ NOVIDADE v2.0.1 — LOGIN / SESSÃO GLOBOPLAY
 - Botão “Entrar / atualizar sessão Globoplay”.
 - O botão abre o Globoplay no navegador padrão do Windows para o usuário fazer login normalmente.
 - Depois do login, ANALISAR e BAIXAR reutilizam a sessão do navegador somente em links do Globoplay.
-- A senha da conta Globo não é salva no aplicativo.
 - A preferência de usar a sessão fica salva nas configurações do aplicativo e pode ser desativada pelo usuário.
 - Se o navegador bloquear a leitura do banco de cookies, o aplicativo informa que o navegador deve ser fechado antes de tentar novamente.
 - DRM, assinatura sem acesso, bloqueio regional e outras restrições continuam sendo apenas detectados; o aplicativo não tenta contornar DRM ou mecanismos de proteção.
