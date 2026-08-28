@@ -73,42 +73,72 @@ jobs:
           Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
           Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
 
-      - name: Verificar sintaxe e fluxo Android
+      - name: Verificar sintaxe e sessão igual ao Android
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
           python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py range_slider.py advanced_editor.py
           @'
+          from pathlib import Path
           import refined_layout_v214 as m
           from PySide6.QtWidgets import QApplication
+
+          class FakeCookie:
+              def __init__(self, domain, name, value):
+                  self._domain = domain; self._name = name; self._value = value
+              def domain(self): return self._domain
+              def path(self): return '/qualquer'
+              def name(self): return self._name.encode()
+              def value(self): return self._value.encode()
+
+          cookies = [
+              FakeCookie('.globoplay.globo.com', 'globoplay_a', '1'),
+              FakeCookie('.play.globo.com', 'play_a', '2'),
+              FakeCookie('.login.globo.com', 'login_a', '3'),
+              FakeCookie('.globo.com', 'root_a', '4'),
+          ]
+          raw, count = m._android_cookie_jar_from_qt(cookies)
+          text = raw.decode()
+          assert count == 4
+          assert text.count('.globo.com\tTRUE\t/\tTRUE\t') == 4
+          assert 'globoplay_a\t1' in text and 'play_a\t2' in text
+          assert 'login_a\t3' in text and 'root_a\t4' in text
+
           assert m._globo_id('https://globoplay.globo.com/v/14907582/?s=0') == '14907582'
           assert 'm3u8_native' in m._hls_selector('b[height<=360]/b')
           assert m.core.DownloadWorker is m.GloboplayAndroidFlowWorker
           assert m.core.MainWindow.download_video is m.v208.direct_download_video
-          app = QApplication.instance() or QApplication([])
-          w = m.core.MainWindow()
-          assert w.btn_analyze.isHidden()
-          assert 'BAIXAR' in w.btn_download.text()
-          w.close()
-          print('v2.0.14 fluxo Android: OK')
-          '@ | python -
+          assert m.v210.GloboplayLoginDialog is m.GloboplayAndroidLoginDialog
 
-      - name: Testar Globoplay publico sem login como no Android
-        shell: powershell
-        run: |
-          $url = "https://globoplay.globo.com/v/14907582/?s=0"
-          $ok = $false
-          Write-Host "Teste 1: URL publica, sem cookies"
-          & "bin/yt-dlp-stable.exe" --ignore-config --no-playlist --force-ipv4 --socket-timeout 30 --retries 10 --fragment-retries 10 --simulate -f "b[height<=360]/b" $url
-          if ($LASTEXITCODE -eq 0) { $ok = $true }
-          if (-not $ok) {
-            Write-Host "Teste 2: globo:14907582, sem cookies"
-            & "bin/yt-dlp-stable.exe" --ignore-config --no-playlist --force-ipv4 --socket-timeout 30 --retries 10 --fragment-retries 10 --simulate -f "b[height<=360]/b" "globo:14907582"
-            if ($LASTEXITCODE -eq 0) { $ok = $true }
-          }
-          if (-not $ok) { throw "O link publico do Globoplay nao passou sem login no yt-dlp STABLE." }
-          Write-Host "Globoplay publico sem login: OK"
+          original_write = m.v202._write_runtime_cookie_file
+          try:
+              m.v202._write_runtime_cookie_file = lambda: Path('globoplay-cookies.txt')
+              wkr = m.GloboplayAndroidFlowWorker(
+                  'https://globoplay.globo.com/v/14907582/?s=0', 0,
+                  format_selector='b[height<=360]/b', compat_selector='b[height<=360]/b'
+              )
+              wkr._globo_use_session = True
+              cmd = wkr._base_cmd('b[height<=360]/b')
+              assert str(cmd[0]).lower().endswith('yt-dlp-stable.exe')
+              assert '--cookies' in cmd
+              assert cmd[cmd.index('--cookies') + 1].endswith('globoplay-cookies.txt')
+              assert '--force-ipv4' in cmd
+              wkr._globo_hls_mode = True
+              cmd_hls = wkr._base_cmd(m._hls_selector('b[height<=360]/b'), referer='https://globoplay.globo.com/v/14907582/?s=0')
+              assert '--hls-use-mpegts' in cmd_hls
+              assert '--downloader' in cmd_hls and 'm3u8:native' in cmd_hls
+              assert '--cookies' in cmd_hls
+          finally:
+              m.v202._write_runtime_cookie_file = original_write
+
+          app = QApplication.instance() or QApplication([])
+          win = m.core.MainWindow()
+          assert win.btn_analyze.isHidden()
+          assert 'BAIXAR' in win.btn_download.text()
+          win.close()
+          print('v2.0.14 login/cookies Globoplay iguais ao Android: OK')
+          '@ | python -
 
       - name: Gerar aplicativo v2.0.14
         shell: powershell
@@ -137,16 +167,18 @@ jobs:
           body: |
             Windows v2.0.14 - Globoplay Android Flow.
 
-            CORREÇÃO:
-            - baseada no código real do Android v1.9.17 que baixa o mesmo vídeo sem login;
-            - remove a pré-validação obrigatória do Globoplay introduzida na v2.0.9;
-            - tenta primeiro a URL pública sem cookies;
-            - depois tenta globo:<ID> sem cookies;
-            - mantém fallback HLS/TS com m3u8:native;
-            - usa yt-dlp STABLE exclusivamente no Globoplay, igual ao Android;
-            - sessão/login passa a ser apenas fallback quando o servidor realmente exigir;
-            - R7, YouTube, Editor e demais funções permanecem preservados;
-            - DRM e permissões continuam sendo respeitados.
+            CORREÇÃO BASEADA DIRETAMENTE NO CÓDIGO ANDROID v1.9.17:
+            - login abre somente a página principal https://globoplay.globo.com/;
+            - botão SALVAR SESSÃO E VOLTAR, sem abrir vídeo e sem exigir Play;
+            - não depende de GLBID nem de validação de player;
+            - coleta cookies da sessão Globo/Globoplay e grava todos como .globo.com, subdomínios habilitados, caminho / e HTTPS, exatamente como a Android;
+            - cookie jar é usado desde a primeira tentativa do link Globoplay;
+            - o mesmo cookie jar é usado em globo:<ID> e HLS/TS;
+            - yt-dlp STABLE é usado exclusivamente no Globoplay, como no Android;
+            - mantém --force-ipv4, 10 retries, 10 fragment-retries, timeout 30 e m3u8:native;
+            - Download Direto sem botão ANALISAR permanece;
+            - R7/Record, YouTube, YouTube Live, Editor, timeline e demais funções preservadas;
+            - DRM e permissões da conta continuam sendo respeitados.
           prerelease: false
           make_latest: true
           files: |
