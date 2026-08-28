@@ -1,0 +1,34 @@
+name: Diagnose R7 Stable vs Nightly
+
+on:
+  push:
+    branches:
+      - v2.0.9-r7-android-parity-work
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    steps:
+      - name: Baixar stable e nightly
+        shell: powershell
+        run: |
+          $ProgressPreference='SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "stable.exe"
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "nightly.exe"
+          Write-Host "STABLE:"; & .\stable.exe --version
+          Write-Host "NIGHTLY:"; & .\nightly.exe --version
+
+      - name: Testar URL correta e URL da captura
+        shell: powershell
+        run: |
+          $fmt='bv*[height<=480][ext=mp4]+ba[ext=m4a]/b[height<=480][ext=mp4]/bv*[height<=480]+ba/b[height<=480]/b'
+          $correta='https://noticias.r7.com/jr-24h/conteudo-exclusivo/video/prefeitura-de-sao-paulo-divulga-novas-regras-para-uso-de-patinetes-eletricos-na-capital-28082026/'
+          $captura='https://noticias.r7.com/jr-24h/conteudo-exclusivo/video/prefeitura-de-sao-paulo-divulga-novas-regras-para-uso-de-patinetes-eletrico/'
+          foreach($exe in @('stable.exe','nightly.exe')) {
+            Write-Host "=== $exe URL CORRETA ==="
+            & ".\$exe" --no-playlist --skip-download --force-ipv4 --socket-timeout 20 -f $fmt $correta
+            Write-Host "RC=$LASTEXITCODE"
+            Write-Host "=== $exe URL DA CAPTURA ==="
+            & ".\$exe" --no-playlist --skip-download --force-ipv4 --socket-timeout 20 -f $fmt $captura
+            Write-Host "RC=$LASTEXITCODE"
+          }
