@@ -1,3 +1,22 @@
+EXTRATOR DE VÍDEOS WINDOWS v2.0.1 — GLOBOPLAY LOGIN
+EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY
+
+NOVIDADE v2.0.1 — LOGIN / SESSÃO GLOBOPLAY
+- Parte exclusivamente da v2.0 — EVOLUÇÃO CONSOLIDADA.
+- Nenhuma função ou layout aprovado foi removido.
+- Em Configurações foi adicionado o cartão “Globoplay — sessão de login”.
+- Botão “Entrar / atualizar sessão Globoplay”.
+- O botão abre o Globoplay no navegador padrão do Windows para o usuário fazer login normalmente.
+- Depois do login, ANALISAR e BAIXAR reutilizam a sessão do navegador somente em links do Globoplay.
+- A senha da conta Globo não é salva no aplicativo.
+- A preferência de usar a sessão fica salva nas configurações do aplicativo e pode ser desativada pelo usuário.
+- Se o navegador bloquear a leitura do banco de cookies, o aplicativo informa que o navegador deve ser fechado antes de tentar novamente.
+- DRM, assinatura sem acesso, bloqueio regional e outras restrições continuam sendo apenas detectados; o aplicativo não tenta contornar DRM ou mecanismos de proteção.
+
+======================================================================
+BASE v2.0 PRESERVADA
+======================================================================
+
 EXTRATOR DE VÍDEOS WINDOWS v2.0 — EVOLUÇÃO CONSOLIDADA
 QUALIDADES REAIS + GLOBOPLAY
 
