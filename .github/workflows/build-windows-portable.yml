@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.13 Globoplay Browser Auth
+name: Build Windows Portable v2.0.14 Globoplay Auto Player
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.13-globoplay-browser-auth
+      - v2.0.14-globoplay-auto-player
 
 permissions:
   contents: write
@@ -94,54 +94,27 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -c "from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineUrlRequestInfo, QWebEngineUrlRequestInterceptor; assert hasattr(QWebEngineUrlRequestInfo, 'requestBody'); assert hasattr(QWebEngineUrlRequestInfo, 'httpHeaders'); print('Qt WebEngine request interception: OK')"
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py range_slider.py advanced_editor.py
+          python -c "from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineUrlRequestInfo, QWebEngineUrlRequestInterceptor; assert hasattr(QWebEngineUrlRequestInfo, 'requestBody'); print('Qt WebEngine: OK')"
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py range_slider.py advanced_editor.py
 
-      - name: Testar captura da autorização real do player Globoplay
+      - name: Testar Auto Player Globoplay
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
           @'
-          import json
-          import refined_layout_v213 as m
+          import refined_layout_v214 as m
           from PySide6.QtWidgets import QApplication
 
-          class FakeUrl:
-              def __init__(self, value): self.value = value
-              def toString(self): return self.value
-          class FakeBody:
-              def __init__(self, raw): self.raw = raw
-              def peek(self, _size): return self.raw
-          class FakeInfo:
-              def __init__(self, body=b'', headers=None):
-                  self.body = body
-                  self.headers = headers or {}
-              def requestUrl(self): return FakeUrl('https://playback.video.globo.com/v4/video-session')
-              def requestBody(self): return FakeBody(self.body)
-              def httpHeaders(self): return self.headers
+          js = m.AUTO_PLAY_JS.lower()
+          assert "document.queryselector('video')" in js
+          assert 'reproduzir' in js
+          assert 'assistir' in js
+          assert 'elementfrompoint' in js
+          assert 'mousedown' in js and 'mouseup' in js and 'click' in js
 
-          body = json.dumps({
-              'video_id': '14907582',
-              'Authorization': 'Bearer token-real-do-player-1234567890',
-          }).encode()
-          auth = m._authorization_from_request_info(FakeInfo(body))
-          assert auth == 'Bearer token-real-do-player-1234567890'
-
-          # Fallback por cabeçalho HTTP Authorization.
-          auth2 = m._authorization_from_request_info(FakeInfo(
-              b'{}', {b'Authorization': b'Bearer token-header-1234567890'}
-          ))
-          assert auth2 == 'Bearer token-header-1234567890'
-
-          # Fallback por Cookie GLBID visível na própria requisição.
-          auth3 = m._authorization_from_request_info(FakeInfo(
-              b'{}', {b'Cookie': b'foo=1; GLBID=token-cookie-1234567890; bar=2'}
-          ))
-          assert auth3 == 'Bearer token-cookie-1234567890'
-
-          assert m.v210.GloboplayProbeWorker210 is m.GloboplayBrowserAuthProbeWorker213
-          assert m.v210.GloboplayLoginDialog is m.GloboplayLoginDialog213
+          assert m.v210.GloboplayLoginDialog is m.GloboplayLoginDialog214
+          assert m.v210.GloboplayProbeWorker210 is m.v213.GloboplayBrowserAuthProbeWorker213
 
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
@@ -149,13 +122,13 @@ jobs:
           assert w.btn_analyze.isHidden()
           assert 'BAIXAR' in w.btn_download.text()
           w.close()
-          print('v2.0.13 Browser Auth Globoplay: OK')
+          print('v2.0.14 Globoplay Auto Player: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.13 Globoplay Browser Auth
+      - name: Gerar aplicativo v2.0.14 Globoplay Auto Player
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v213.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v214.py
 
       - name: Montar portable
         shell: powershell
@@ -169,27 +142,27 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.13-GLOBOPLAY-BROWSER-AUTH.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.14-GLOBOPLAY-AUTO-PLAYER.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.13
+          tag_name: v2.0.14
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.13 - Globoplay Browser Auth
+          name: Extrator de Vídeos Windows v2.0.14 - Globoplay Auto Player
           body: |
-            Extrator de Vídeos Windows Portable v2.0.13 - Globoplay Browser Auth.
+            Extrator de Vídeos Windows Portable v2.0.14 - Globoplay Auto Player.
 
             CORREÇÃO PRINCIPAL DO GLOBOPLAY:
-            - deixa de depender da existência do cookie GLBID no cookieStore do Qt;
-            - intercepta somente a chamada oficial de playback feita pelo navegador interno;
-            - lê o JSON do POST de video-session sem consumir a requisição do Chromium;
-            - captura a autorização que o próprio player acabou de usar;
-            - aceita também Authorization em cabeçalho ou GLBID presente no Cookie da requisição como fallback;
-            - salva a autorização de sessão protegida pelo Windows/DPAPI, nunca a senha;
-            - reutiliza essa autorização para pedir a sessão oficial de reprodução e entrega apenas o manifesto HLS/MPD autorizado ao downloader;
+            - corrige o cenário em que o login está ativo, mas a página abre sem iniciar o player;
+            - tenta automaticamente o elemento HTML5 <video>;
+            - procura e aciona botões Play, Reproduzir, Assistir, Iniciar ou Continuar;
+            - possui fallback de clique na área central do player para superfícies sem rótulo;
+            - repete a tentativa durante o carregamento da página até a requisição oficial de playback aparecer;
+            - mantém a captura Browser Auth da v2.0.13 e a sessão protegida por DPAPI;
+            - senha não é armazenada;
             - DRM, assinatura e permissões continuam sendo respeitados e não são contornados.
 
             PRESERVADO:
@@ -201,6 +174,6 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.13-GLOBOPLAY-BROWSER-AUTH.zip
+            ExtratorVideos-Windows-Portable-v2.0.14-GLOBOPLAY-AUTO-PLAYER.zip
           fail_on_unmatched_files: true
           overwrite_files: true
