@@ -1,3 +1,23 @@
+EXTRATOR DE VÍDEOS WINDOWS v2.0.3 — R7 PLAYER FIX
+EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY + R7
+
+NOVIDADE v2.0.3 — CORREÇÃO DE VÍDEOS DO R7
+- Parte exclusivamente da v2.0.2 — SESSÃO GLOBOPLAY PERSISTENTE.
+- Nenhuma função ou layout aprovado foi removido.
+- Adicionado reconhecimento específico para páginas de vídeo do R7/Noticias R7.
+- O aplicativo procura o ID interno de 24 caracteres usado pelo player do R7.
+- Quando necessário, consulta a player-api.r7.com para obter a mídia real.
+- Prioriza HLS (.m3u8) e MP4 reais antes dos candidatos genéricos da página.
+- ANALISAR passa a usar a mídia real do player para listar somente qualidades disponíveis.
+- BAIXAR passa a tentar o HLS/MP4 do player mantendo o Referer da matéria.
+- Foi adicionado modo de compatibilidade quando o formato principal do R7 não é aceito.
+- Caso de referência informado: páginas noticias.r7.com/.../video/... do JR 24 Horas.
+- DRM, login, região e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+
+======================================================================
+BASE v2.0.2 PRESERVADA
+======================================================================
+
 EXTRATOR DE VÍDEOS WINDOWS v2.0.2 — SESSÃO GLOBOPLAY PERSISTENTE
 EVOLUÇÃO CONSOLIDADA + QUALIDADES REAIS + GLOBOPLAY
 
