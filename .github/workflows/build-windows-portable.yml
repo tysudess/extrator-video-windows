@@ -1,11 +1,11 @@
-name: Build Windows Portable v1.9.22 Qualidades Reais + Globoplay Status
+name: Build Windows Portable v2.0 Evolucao Consolidada
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v1.9.22-qualidades-reais-globoplay
+      - v2.0
 
 permissions:
   contents: write
@@ -94,12 +94,12 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py range_slider.py advanced_editor.py
 
-      - name: Gerar aplicativo Modern UI
+      - name: Gerar aplicativo v2.0 preservando a base v1.9.22
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v2.py
 
       - name: Montar portable
         shell: powershell
@@ -113,25 +113,29 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0-EVOLUCAO-CONSOLIDADA.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v1.9.22-qualidades-reais-globoplay
+          tag_name: v2.0
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v1.9.22 - Qualidades Reais + Globoplay Status
+          name: Extrator de Vídeos Windows v2.0 - Evolução Consolidada
           body: |
-            Extrator de Vídeos Windows Portable v1.9.22 - Qualidades Reais + Globoplay Status.
-            Mantém as funções aprovadas: timeline com arrastar e soltar pelo mouse, Delete no teclado, editor integrado, proxy, H.264/H.265, compressão, cortes, união interna e layout refinado.
-            Nova função para YouTube ao vivo: ao analisar uma live, o app detecta AO VIVO e oferece BAIXAR DO INÍCIO ATÉ AGORA.
-            O ponto final é atualizado e congelado no instante em que o download começa. A transmissão pode continuar no YouTube, mas o arquivo tenta terminar naquele ponto.
-            NOVO: o botão ANALISAR mostra somente resoluções que o yt-dlp confirmou com formato de vídeo real, URL de mídia e sem indicação de DRM.
-            Links protegidos por DRM ou que exigem autenticação/assinatura ficam marcados como indisponíveis; o aplicativo não tenta contornar proteção.
+            Extrator de Vídeos Windows Portable v2.0 - Evolução Consolidada.
+
+            A v2.0 parte exclusivamente da base aprovada Windows v1.9.22 - QUALIDADES REAIS + GLOBOPLAY.
+            Nenhuma função ou layout aprovado foi removido ou redesenhado nesta mudança de versão.
+
+            Mantidos: Editor integrado, timeline com arrastar e soltar diretamente pelo mouse, Delete no teclado, cortes em segundos/milissegundos, união interna, H.264/H.265, compressão inteligente, resolução, proxy, pré-visualização, histórico, YouTube, Live do início até o momento atual, Globoplay quando disponível e ANALISAR mostrando somente qualidades realmente disponíveis.
+
+            DRM/login/assinatura/restrições continuam sendo somente detectados e informados; o aplicativo não tenta contornar DRM.
+
+            O LEIA-ME incluído no pacote contém o histórico consolidado da evolução do projeto até a v2.0.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v1.9.22-QUALIDADES-REAIS-GLOBOPLAY.zip
+            ExtratorVideos-Windows-Portable-v2.0-EVOLUCAO-CONSOLIDADA.zip
           fail_on_unmatched_files: true
           overwrite_files: true

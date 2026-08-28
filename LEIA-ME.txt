@@ -1,129 +1,169 @@
-EXTRATOR DE VÍDEOS WINDOWS v1.9.22 — QUALIDADES REAIS + GLOBOPLAY
+EXTRATOR DE VÍDEOS WINDOWS v2.0 — EVOLUÇÃO CONSOLIDADA
+QUALIDADES REAIS + GLOBOPLAY
 
+BASE OFICIAL PRESERVADA
+A v2.0 parte exclusivamente da Windows v1.9.22 — QUALIDADES REAIS + GLOBOPLAY.
+Nenhuma função ou layout aprovado foi removido ou redesenhado nesta mudança de versão.
+A v2.0 consolida o histórico técnico do projeto e mantém o motor funcional da v1.9.22 intacto.
 
-NOVIDADE v1.9.22
-- O botão ANALISAR agora mostra somente qualidades realmente confirmadas pelo yt-dlp.
-- Não exibe resoluções falsas quando o site não fornece aquele formato.
-- Conteúdo indisponível, com DRM ou que exige login/assinatura é marcado como indisponível, sem oferecer opções falsas.
-- Melhor identificação do status de links do Globoplay, respeitando DRM e autenticação.
-- Mantém timeline com arrastar e soltar pelo mouse, Delete no teclado, editor integrado, proxy, H.264/H.265, compressão e Live DVR do início até o momento atual.
+RECURSOS PRESERVADOS NA v2.0
+- Layout moderno aprovado.
+- Editor integrado.
+- Timeline com arrastar e soltar diretamente pelo mouse para mudar a ordem dos vídeos.
+- Seleção de clipes/trechos.
+- Delete no teclado para excluir o item selecionado.
+- Cortes com precisão em segundos e milissegundos.
+- União dos vídeos dentro do próprio Editor.
+- H.264 e H.265/HEVC.
+- Compressão inteligente.
+- Escolha de resolução.
+- Proxy.
+- Pré-visualização.
+- Histórico.
+- Download do YouTube.
+- Live do YouTube do início da transmissão até o momento atual, quando o DVR permite.
+- Suporte ao Globoplay quando o conteúdo está realmente disponível.
+- ANALISAR mostra somente qualidades realmente confirmadas para download.
+- Não exibe resoluções falsas ou indisponíveis.
+- Detecta DRM/login/restrição e não tenta contornar DRM.
 
-NOVIDADE v1.9.21
-- Agora o clipe inteiro na timeline pode ser clicado e arrastado com o mouse.
-- Segure o botão esquerdo sobre qualquer parte do vídeo, arraste para a posição desejada e solte.
-- A posição de destino fica destacada antes de soltar.
-- Clique simples continua selecionando o clipe e posicionando o cursor.
-- Mantém Delete no teclado, cortes, união interna, exportação e Live DVR snapshot.
-NOVIDADE v1.9.20.2
-- Para lives do YouTube com DVR, o método principal não depende mais de --download-sections.
-- Ao clicar em BAIXAR DO INÍCIO ATÉ AGORA, o app congela a playlist HLS/DVR disponível naquele instante.
-- O arquivo local recebe #EXT-X-ENDLIST, então novos segmentos da transmissão não são acompanhados.
-- O FFmpeg baixa somente a janela congelada e finaliza em MP4.
-- Se a janela DVR não contiver mais o início (por exemplo em lives muito longas), o app informa isso e ainda tenta o modo compatível do yt-dlp.
+======================================================================
+HISTÓRICO DE EVOLUÇÃO CONSOLIDADO NA v2.0
+======================================================================
 
-EXTRATOR DE VÍDEOS — WINDOWS PORTABLE v1.9.16
-MODERN UI • TIMELINE PREMIUM • COMPRESSÃO INTELIGENTE
+v1.9.0 — EDITOR MS
+- Editor de vídeo integrado ao aplicativo.
+- Seleção precisa de início e fim.
+- Ajustes em segundos e milissegundos.
+- Pré-visualização do vídeo.
+- Corte de trechos.
+- União de vídeos.
+- Exportação do resultado.
+- Base do sistema de edição que continuamos evoluindo.
 
-BASE PRESERVADA
-Esta versão parte da v1.9.15 TIMELINE PREMIUM. O motor funcional de download, proxy, edição, união e exportação foi preservado; a principal mudança é a nova interface visual e o novo ícone do aplicativo.
+EVOLUÇÃO v1.9.0 → v1.9.10.1
+- Timeline passou a ser o centro da edição.
+- Marcadores de Início/Fim.
+- Ajustes de ±1 s, ±100 ms e ±10 ms.
+- Botões Marcar início aqui / Marcar fim aqui.
+- Correções de sincronização de áudio/vídeo.
+- Melhorias no cursor/playhead.
+- Criação de cortes na timeline.
+- Exclusão de trechos.
+- Adicionar vários vídeos.
+- Ordenar/remover vídeos.
+- Prévia da sequência.
+- Nome personalizado para o arquivo final.
+- Exportação em diferentes resoluções.
+- H.264 e H.265/HEVC.
+- Compressão.
+- Barras de progresso.
+- Melhorias para uso por toque no Android no histórico multiplataforma do projeto.
+- Correção de espaço inferior para a barra de navegação do Android no histórico multiplataforma.
+- GitHub Actions preparado para gerar APK no ramo Android do projeto.
+- Publicação automática do APK em GitHub Releases no ramo Android do projeto.
 
-NOVA INTERFACE MODERNA
-- Navegação lateral fixa: Baixar / Editor Timeline / Proxy.
-- Cabeçalho com título da página e status da conexão.
-- Tela de download reorganizada em cards.
-- Botões maiores e melhor espaçamento para uso com mouse/touchpad.
-- Foco visual mais claro, contraste elevado e textos auxiliares.
-- Tema escuro roxo/azul/ciano alinhado ao preview aprovado.
-- Novo ícone embutido no ExtratorVideos.exe.
+v1.9.11 — NOVO LAYOUT
+- Reformulação visual iniciada no Android e usada como referência de evolução visual.
+- Interface mais moderna para celular no ramo Android.
+- Navegação simplificada entre Download e Editor.
+- Botões maiores.
+- Melhor contraste.
+- Novo cabeçalho.
+- Novo ícone.
+- Layout roxo/azul/ciano.
+- Download reorganizado em cartões.
+- Editor/timeline reorganizados para telas de celular no ramo Android.
 
-DOWNLOAD / YOUTUBE / PROXY
-- Download por link.
-- YouTube e sites compatíveis com yt-dlp.
-- Qualidades 360p, 480p, 720p, 1080p e melhor disponível.
-- yt-dlp NIGHTLY e Deno.
-- Conexão direta ou proxy.
-- Senha do proxy não é gravada.
-- Diagnóstico do yt-dlp quando necessário.
+v1.9.12 — TIMELINE REORDER + DELETE
+- Toque longo + arrastar no Android para mudar a ordem dos vídeos diretamente na timeline.
+- No Windows, evolução para arrastar diretamente pelo mouse.
+- Seleção visual do clipe.
+- Tecla física Delete / Forward Delete remove o clipe selecionado.
+- Remoção da navegação redundante de “Unir vídeos”.
+- Editor passou a concentrar cortes, organização, reordenação, união e exportação.
+- Exportação Original / 360p / 480p / 720p / 1080p.
+- H.264/H.265 preservados.
+- Controle aproximado de tamanho/compressão.
+- Timeline com miniaturas e zoom.
 
-EDITOR / TIMELINE PREMIUM
-- Timeline unificada para 1 ou mais vídeos.
-- Miniaturas reais geradas pelo FFmpeg.
-- Linha de reprodução global.
-- Cortar no cursor com tesourinha.
-- Excluir, duplicar e reordenar trechos.
-- Prévia contínua da sequência.
-- Zoom da timeline.
-- Ajustes ±1s, ±100ms e ±10ms.
-- Marcar início/fim com precisão de milissegundos.
-- Campos HH:MM:SS.mmm.
+v1.9.13 — YT-DLP + DOWNLOAD FIX
+- Corrigido travamento ao Atualizar yt-dlp.
+- Corrigido problema em que o download deixava de funcionar.
+- No Android, restaurado android:extractNativeLibs="true".
+- Atualização do yt-dlp passou a ter timeout.
+- Atualização separada da fila de downloads.
+- Atualização atômica: só substitui o yt-dlp depois de baixar corretamente.
+- Se a atualização falhar, mantém a versão anterior.
+- Tentativa alternativa de atualização quando um endpoint não responde.
+- Editor/timeline preservados.
 
-EXPORTAÇÃO / COMPRESSÃO
-- Resolução Original, 360p, 480p, 720p ou 1080p.
-- H.264 / AVC.
-- H.265 / HEVC para maior compressão.
-- Fallback automático para H.264 quando necessário.
-- Áudio AAC.
-- Controle opcional de tamanho aproximado.
-- Originais preservados.
+v1.9.14 — GLOBOPLAY LINK DIRETO
+- Fluxo mantido: colar link → escolher qualidade → baixar.
+- Detecção automática de links Globoplay.
+- Tentativa normal pelo endereço da página.
+- Segunda tentativa automática usando globo:<id>.
+- Detecção de conteúdo que exige autenticação.
+- Detecção de DRM com mensagem clara.
 
-BUILD LOCAL
-Execute build_windows.bat depois de colocar em bin:
-- yt-dlp.exe
-- ffmpeg.exe
-- ffprobe.exe
-- deno.exe
+v1.9.15 — GLOBOPLAY LOGIN
+- Criada autenticação de sessão no histórico de evolução do projeto.
+- Botão Entrar / atualizar sessão Globoplay.
+- Login feito diretamente na página do Globoplay.
+- Senha não é colocada no código.
+- Cookies/sessão seriam reutilizados pelo yt-dlp.
+- Essa versão teve falha no build por causa de um patch corrompido.
+- A v1.9.15 não foi adotada como versão final.
+- A solução foi corrigida e incorporada à evolução posterior.
 
-BUILD GITHUB ACTIONS
-O workflow baixa automaticamente os binários, gera o EXE com o novo ícone, monta o portable e publica o ZIP diretamente em GitHub Releases.
+v1.9.16 — GLOBOPLAY HLS/TS
+- Correção da autenticação de sessão no histórico do projeto.
+- Sessão/cookies reutilizados automaticamente quando aplicável.
+- Tentativa normal pelo link.
+- Tentativa automática por globo:<id>.
+- Fallback HLS .m3u8.
+- Uso de MPEG-TS .ts quando necessário.
+- Uso do modo --hls-use-mpegts no histórico dessa implementação.
+- Downloader HLS nativo.
+- Detecção automática de playlists .m3u8.
+- Tentativa de encontrar .m3u8 também no HTML autenticado.
+- Cookies enviados na análise autenticada da página.
+- Qualidade escolhida respeitada: 360p, 480p, 720p e 1080p quando disponível.
+- DRM continua sendo apenas identificado; o aplicativo não tenta contorná-lo.
+- No ramo Android, APK + ZIP do projeto passaram a ser publicados juntos nos Assets da Release.
 
-ARQUIVO FINAL
-ExtratorVideos-Windows-Portable-v1.9.16-MODERN-UI.zip
+v1.9.17 — TIMELINE SCRUB DURANTE PLAY
+- Vídeo pode continuar em Play enquanto o usuário mexe na timeline.
+- Playhead pode ser arrastado durante a reprodução.
+- Área de toque do playhead ampliada no histórico Android.
+- Toda a régua superior da timeline funciona como área para arrastar.
+- Ao arrastar, o vídeo não precisa ser pausado.
+- Ao soltar, continua reproduzindo a partir do novo ponto.
+- Evita avanço automático para outro clipe durante o scrub.
+- Reordenação continua funcionando.
+- Delete continua funcionando.
+- Cortes continuam funcionando.
+- H.264/H.265 continuam.
+- Compressão continua.
+- Suporte Globoplay/HLS preservado conforme disponibilidade e restrições.
 
-=== v1.9.17 — REFINO VISUAL ETAPA 1 ===
-- Tela principal redesenhada para se aproximar da referência aprovada.
-- Menu lateral: Início, Download, Editor, Unir Vídeos, Histórico e Configurações.
-- Botão ANALISAR com leitura real de metadados pelo yt-dlp.
-- Qualidades: 2160p, 1440p, 1080p, 720p, 480p e 360p.
-- Cards de informações do vídeo, escolha de qualidade e resumo do download.
-- Painel direito com identidade do novo design e visualização do ícone.
-- Motor de download, proxy, Timeline Premium, H.264/H.265 e união preservados.
+EVOLUÇÃO WINDOWS ATÉ A BASE v1.9.22
+- v1.9.17: refino visual da interface Windows.
+- v1.9.18: Editor/Timeline refinado.
+- v1.9.18.1: correção de inicialização do layout refinado.
+- v1.9.19: Timeline Reorder + Delete no Windows.
+- v1.9.20: live do início até o momento atual.
+- v1.9.20.2: snapshot HLS/DVR congelando a janela disponível no instante do clique.
+- v1.9.21: arrastar diretamente qualquer parte do clipe com o mouse.
+- v1.9.22: ANALISAR mostra apenas qualidades reais; melhora detecção de Globoplay, DRM, login e restrições.
 
+v2.0 — EVOLUÇÃO CONSOLIDADA
+- Nova identificação principal do projeto Windows: v2.0.
+- Base funcional preservada: Windows v1.9.22 — QUALIDADES REAIS + GLOBOPLAY.
+- Histórico técnico consolidado dentro do pacote da versão.
+- Nenhuma função aprovada foi removida.
+- Nenhum layout aprovado foi alterado.
+- Downloader, Editor, timeline, proxy, H.264/H.265, compressão, YouTube Live, qualidades reais e detecção de restrições continuam preservados.
 
-=== v1.9.18 — REFINO VISUAL ETAPA 2 ===
-- Editor/Timeline redesenhado para ficar muito mais fiel à referência aprovada.
-- Preview de vídeo ampliado.
-- Painel Marcação rápida à direita com Início, Fim e Duração.
-- Timeline compacta com zoom, cursor e range do clipe selecionado.
-- Ajustes −1s / −100ms / −10ms / +10ms / +100ms / +1s posicionados abaixo da timeline.
-- Botões Cortar, Excluir trecho, Duplicar, Esquerda e Direita reorganizados.
-- Exportação compacta com nome, resolução, H.264/H.265, tamanho alvo e botão EXPORTAR destacado.
-- Motor de edição, cortes, união, preview e compressão preservado.
-
-=== v1.9.18.1 — BUILD FIX ===
-- Corrige falha na inicialização da interface refinada: connection_badge agora é criado antes da carga da configuração de proxy.
-- Adicionada proteção defensiva no motor para não encerrar o programa caso um layout futuro não possua o selo visual de conexão.
-- Todo o layout e as funções da Etapa 2 foram preservados.
-
-
-=== v1.9.19 — TIMELINE REORDER + DELETE ===
-- Clique e arraste qualquer parte do vídeo na timeline para mudar sua ordem; solte na posição desejada.
-- Tecla Delete remove o clipe/trecho selecionado (não dispara enquanto edita campos de texto).
-- Botões Esquerda/Direita continuam disponíveis como alternativa.
-- Item Unir Vídeos removido do menu lateral; a união continua dentro do Editor/Timeline.
-- Todo o visual e recursos da v1.9.18.1 foram preservados.
-
-
-=== v1.9.20 — LIVE DO INÍCIO ATÉ AGORA ===
-- Ao analisar um link do YouTube que esteja AO VIVO, o aplicativo mostra o selo vermelho AO VIVO.
-- O botão muda para: BAIXAR DO INÍCIO ATÉ AGORA.
-- No momento em que você clica em baixar, o app consulta a live novamente e congela o ponto final.
-- Exemplo: se a live começou há 01:27:35, o objetivo do arquivo é 00:00:00 -> 01:27:35, sem continuar acompanhando depois.
-- Requer que a transmissão ofereça DVR/segmentos desde o início. O suporte do yt-dlp para recortes de live ainda é experimental; algumas lives podem não permitir esse modo.
-- Se o modo exato falhar, o aplicativo tenta novamente com formato MP4 combinado. Ele NÃO muda para download a partir do momento atual, pois isso seria diferente do modo solicitado.
-
-
-ATUALIZAÇÃO — QUALIDADES REAIS / GLOBOPLAY
-- Depois de clicar em ANALISAR, o programa mostra somente resoluções que o yt-dlp confirmou como realmente disponíveis.
-- Qualidades sem formato real deixam de aparecer.
-- Conteúdos protegidos por DRM ou que exigem autenticação/assinatura são informados como indisponíveis.
-- O aplicativo não contorna DRM nem proteção de acesso.
+REGRA DE SEGURANÇA / DRM
+O aplicativo somente detecta e informa conteúdo protegido por DRM, login, assinatura, região ou outras restrições. Ele não tenta contornar DRM ou mecanismos de proteção de acesso.
