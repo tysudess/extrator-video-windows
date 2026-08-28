@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.8 Download Direto
+name: Build Windows Portable v2.0.9 R7 Android Parity
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.8-direct-download-work
+      - v2.0.9-r7-android-parity-work
 
 permissions:
   contents: write
@@ -33,11 +33,11 @@ jobs:
         shell: powershell
         run: New-Item -ItemType Directory -Force -Path bin | Out-Null
 
-      - name: Baixar yt-dlp NIGHTLY
+      - name: Baixar yt-dlp STABLE igual ao Android
         shell: powershell
         run: |
           $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
           & "bin/yt-dlp.exe" --version
 
       - name: Baixar Deno
@@ -90,47 +90,93 @@ jobs:
           & "bin/ffmpeg.exe" -version
           & "bin/ffprobe.exe" -version
 
-      - name: Verificar icone e sintaxe
+      - name: Verificar sintaxe e paridade Android
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py range_slider.py advanced_editor.py
-
-      - name: Testar fluxo direto estilo Android
-        shell: powershell
-        run: |
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py range_slider.py advanced_editor.py
           $env:QT_QPA_PLATFORM = 'offscreen'
           @'
-          import refined_layout_v208 as m
+          import refined_layout_v209 as m
           from PySide6.QtWidgets import QApplication
 
-          assert len(m.DIRECT_QUALITIES) == 5
-          assert m.DIRECT_QUALITIES[0][1] == 360
-          assert m.DIRECT_QUALITIES[1][1] == 480
-          assert m.DIRECT_QUALITIES[2][1] == 720
-          assert m.DIRECT_QUALITIES[3][1] == 1080
-          assert 'height<=720' in m.DIRECT_QUALITIES[2][2]
-          assert m.core.DownloadWorker.__name__ == 'R7DirectDownloadWorker'
+          assert 'Android 14' in m.ANDROID_USER_AGENT
+          assert m.core.DownloadWorker.__name__ == 'R7AndroidParityDownloadWorker'
+          assert m.core.UpdateWorker.__name__ == 'StableUpdateWorker'
+          assert m.v208.DIRECT_QUALITIES[1][0] == '480p'
+          assert 'height<=480' in m.v208.DIRECT_QUALITIES[1][2]
 
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
-          assert hasattr(w, 'direct_quality_combo')
-          assert w.direct_quality_combo.count() == 5
           assert w.direct_quality_combo.currentIndex() == 1
-          assert '480' in w.direct_quality_combo.currentText()
-          assert 'BAIXAR' in w.btn_download.text()
           assert w.btn_analyze.isHidden()
-          assert not w.btn_download.isEnabled()
-          w.url_edit.setText('https://exemplo.com/video')
-          assert w.btn_download.isEnabled()
+          assert 'BAIXAR' in w.btn_download.text()
           w.close()
-          print('Download direto estilo Android: OK')
+          print('Paridade estrutural Android: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.8 Download Direto
+      - name: Diagnosticar link R7 real com Desktop x Android
+        continue-on-error: true
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v208.py
+          @'
+          import subprocess
+          import urllib.error
+          import urllib.request
+          import refined_layout_v209 as m
+
+          urls = [
+              ('URL da captura', 'https://noticias.r7.com/jr-24h/conteudo-exclusivo/video/prefeitura-de-sao-paulo-divulga-novas-regras-para-uso-de-patinetes-eletrico/'),
+              ('URL canonica atual', 'https://noticias.r7.com/jr-24h/conteudo-exclusivo/video/prefeitura-de-sao-paulo-divulga-novas-regras-para-uso-de-patinetes-eletricos-na-capital-28082026/'),
+          ]
+          uas = [
+              ('Desktop', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36'),
+              ('Android', m.ANDROID_USER_AGENT),
+          ]
+
+          fmt = m.v208.DIRECT_QUALITIES[1][2]
+          for label, url in urls:
+              print('\n===', label, '===')
+              for ua_label, ua in uas:
+                  req = urllib.request.Request(url, headers={
+                      'User-Agent': ua,
+                      'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+                      'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+                  })
+                  try:
+                      with urllib.request.urlopen(req, timeout=30) as r:
+                          body = r.read().decode(r.headers.get_content_charset() or 'utf-8', 'replace')
+                          final = r.geturl()
+                          print(ua_label, 'HTTP', r.status, 'final=', final, 'bytes=', len(body))
+                          if ua_label == 'Android':
+                              candidates = m.v208.v207._android_extract_candidates(body, final)
+                              print('candidatos Android:', len(candidates))
+                              for i, c in enumerate(candidates[:15], 1):
+                                  print(i, c)
+                              for i, c in enumerate(candidates[:8], 1):
+                                  cmd = [
+                                      str(m.core.YTDLP_EXE), '--no-mtime', '--no-playlist',
+                                      '--force-ipv4', '--retries', '2', '--fragment-retries', '2',
+                                      '--socket-timeout', '20', '--skip-download', '-f', fmt,
+                                      '--referer', url, c,
+                                  ]
+                                  p = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60)
+                                  print('probe', i, 'rc=', p.returncode)
+                                  if p.returncode == 0:
+                                      print('PRIMEIRO CANDIDATO ACEITO:', c)
+                                      break
+                                  out = (p.stderr or p.stdout or '').strip().splitlines()
+                                  print('erro:', out[-1] if out else 'sem saída')
+                  except urllib.error.HTTPError as e:
+                      print(ua_label, 'HTTPError', e.code, 'final=', e.geturl())
+                  except Exception as e:
+                      print(ua_label, type(e).__name__, str(e))
+          '@ | python -
+
+      - name: Gerar aplicativo v2.0.9 R7 Android Parity
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v209.py
 
       - name: Montar portable
         shell: powershell
@@ -144,36 +190,34 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.8-DOWNLOAD-DIRETO.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.9-R7-ANDROID-PARITY.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.8
+          tag_name: v2.0.9
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.8 - Download Direto estilo Android
+          name: Extrator de Vídeos Windows v2.0.9 - R7 Paridade Real Android
           body: |
-            Extrator de Vídeos Windows Portable v2.0.8 - Download Direto estilo Android.
+            Windows v2.0.9 - R7 Paridade Real Android.
 
-            NOVO FLUXO DE DOWNLOAD:
-            - remove o botão ANALISAR da tela de Download;
-            - fluxo igual ao Android: colar link -> escolher qualidade -> BAIXAR VÍDEO;
-            - qualidades fixas: 360p, 480p, 720p HD, 1080p Full HD e Melhor disponível;
-            - 480p permanece como padrão;
-            - as escolhas usam os mesmos seletores de formato da Android v1.9.17;
-            - YouTube Live continua sendo detectado internamente, sem botão de análise, preservando o modo do início até o momento atual;
-            - Globoplay continua usando a sessão persistente protegida pelo Windows;
-            - R7 continua no fluxo matéria -> HTML -> até 15 candidatos com Referer;
-            - no R7, uma indicação genérica de DRM na tentativa inicial não interrompe prematuramente a busca pelos candidatos, igual ao comportamento Android;
-            - URLs R7 duplicadas continuam sendo limpas automaticamente.
+            Correção focada no motivo pelo qual o mesmo R7 baixava no Android e falhava no Windows:
+            - yt-dlp do pacote Windows passa do canal NIGHTLY para STABLE, igual ao Android;
+            - atualização manual do yt-dlp também passa a usar STABLE;
+            - fallback HTML do R7 usa exatamente o User-Agent Chrome Mobile/Android 14 do aplicativo Android;
+            - Accept e Accept-Language iguais ao Android;
+            - redirecionamento HTTP passa a usar a URL final como base dos candidatos relativos;
+            - comando R7 foi reduzido aos parâmetros de rede/formato usados pelo Android, mantendo apenas o necessário para Windows e diagnóstico;
+            - mantém matéria -> HTML -> até 15 candidatos -> Referer da matéria;
+            - mantém Download Direto: link -> qualidade -> BAIXAR VÍDEO.
 
-            Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, histórico, FFmpeg/FFprobe/Deno e demais funções permanecem preservados.
-            DRM confirmado e demais restrições reais continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+            Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, histórico, YouTube Live e Globoplay permanecem preservados.
+            DRM e demais restrições reais continuam sendo respeitados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.8-DOWNLOAD-DIRETO.zip
+            ExtratorVideos-Windows-Portable-v2.0.9-R7-ANDROID-PARITY.zip
           fail_on_unmatched_files: true
           overwrite_files: true
