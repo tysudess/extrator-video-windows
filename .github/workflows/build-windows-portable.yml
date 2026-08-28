@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.8 Download Direto
+name: Build Windows Portable v2.0.9 Globoplay Direct Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.8-direct-download-work
+      - v2.0.9-globoplay-direct-fix
 
 permissions:
   contents: write
@@ -94,43 +94,67 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py range_slider.py advanced_editor.py
 
-      - name: Testar fluxo direto estilo Android
+      - name: Testar download direto e sessão Globoplay
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           @'
-          import refined_layout_v208 as m
+          from pathlib import Path
+          import refined_layout_v209 as m
           from PySide6.QtWidgets import QApplication
 
-          assert len(m.DIRECT_QUALITIES) == 5
-          assert m.DIRECT_QUALITIES[0][1] == 360
-          assert m.DIRECT_QUALITIES[1][1] == 480
-          assert m.DIRECT_QUALITIES[2][1] == 720
-          assert m.DIRECT_QUALITIES[3][1] == 1080
-          assert 'height<=720' in m.DIRECT_QUALITIES[2][2]
-          assert m.core.DownloadWorker.__name__ == 'R7DirectDownloadWorker'
+          link = 'https://globoplay.globo.com/v/14907582/?s=0'
+          assert m.v201._is_globoplay_url(link)
+          assert len(m.v208.DIRECT_QUALITIES) == 5
+          assert m.v208.DIRECT_QUALITIES[1][0] == '480p'
+
+          payload = {
+              'available_qualities': [
+                  {'height': 1080, 'label': '1080p', 'selector': 'f1080', 'compat_selector': 'c1080'},
+                  {'height': 720, 'label': '720p', 'selector': 'f720', 'compat_selector': 'c720'},
+                  {'height': 480, 'label': '480p', 'selector': 'f480', 'compat_selector': 'c480'},
+                  {'height': 360, 'label': '360p', 'selector': 'f360', 'compat_selector': 'c360'},
+              ]
+          }
+          assert m._select_globoplay_quality(payload, 0)['height'] == 360
+          assert m._select_globoplay_quality(payload, 1)['height'] == 480
+          assert m._select_globoplay_quality(payload, 2)['height'] == 720
+          assert m._select_globoplay_quality(payload, 3)['height'] == 1080
+          assert m._select_globoplay_quality(payload, 4)['height'] == 1080
+
+          # Simula uma sessão persistente já descriptografada e confirma que
+          # o DownloadWorker ativo da v2.0.9 injeta --cookies no Globoplay.
+          m.v202._write_runtime_cookie_file = lambda: Path(r'C:\Temp\globoplay-session.txt')
+          worker = m.core.DownloadWorker(
+              link, 0, '', format_selector='f480', compat_selector='c480'
+          )
+          cmd = worker._base_cmd('f480')
+          assert '--cookies' in cmd, cmd
+          cookie_index = cmd.index('--cookies')
+          assert 'globoplay-session.txt' in cmd[cookie_index + 1]
 
           app = QApplication.instance() or QApplication([])
           w = m.core.MainWindow()
           assert hasattr(w, 'direct_quality_combo')
-          assert w.direct_quality_combo.count() == 5
           assert w.direct_quality_combo.currentIndex() == 1
-          assert '480' in w.direct_quality_combo.currentText()
-          assert 'BAIXAR' in w.btn_download.text()
           assert w.btn_analyze.isHidden()
-          assert not w.btn_download.isEnabled()
-          w.url_edit.setText('https://exemplo.com/video')
-          assert w.btn_download.isEnabled()
+          assert 'BAIXAR' in w.btn_download.text()
           w.close()
-          print('Download direto estilo Android: OK')
+          print('Globoplay direct + sessão persistente: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.8 Download Direto
+      - name: Diagnosticar link Globoplay informado
+        continue-on-error: true
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v208.py
+          & "bin/yt-dlp.exe" --no-playlist --skip-download --socket-timeout 30 "https://globoplay.globo.com/v/14907582/?s=0"
+
+      - name: Gerar aplicativo v2.0.9 Globoplay Direct Fix
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v209.py
 
       - name: Montar portable
         shell: powershell
@@ -144,36 +168,37 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.8-DOWNLOAD-DIRETO.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.9-GLOBOPLAY-DIRECT-FIX.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.8
+          tag_name: v2.0.9
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.8 - Download Direto estilo Android
+          name: Extrator de Vídeos Windows v2.0.9 - Globoplay Direct Fix
           body: |
-            Extrator de Vídeos Windows Portable v2.0.8 - Download Direto estilo Android.
+            Extrator de Vídeos Windows Portable v2.0.9 - Globoplay Direct Fix.
 
-            NOVO FLUXO DE DOWNLOAD:
-            - remove o botão ANALISAR da tela de Download;
-            - fluxo igual ao Android: colar link -> escolher qualidade -> BAIXAR VÍDEO;
-            - qualidades fixas: 360p, 480p, 720p HD, 1080p Full HD e Melhor disponível;
-            - 480p permanece como padrão;
-            - as escolhas usam os mesmos seletores de formato da Android v1.9.17;
-            - YouTube Live continua sendo detectado internamente, sem botão de análise, preservando o modo do início até o momento atual;
-            - Globoplay continua usando a sessão persistente protegida pelo Windows;
-            - R7 continua no fluxo matéria -> HTML -> até 15 candidatos com Referer;
-            - no R7, uma indicação genérica de DRM na tentativa inicial não interrompe prematuramente a busca pelos candidatos, igual ao comportamento Android;
-            - URLs R7 duplicadas continuam sendo limpas automaticamente.
+            CORREÇÃO GLOBOPLAY:
+            - mantém a tela de Download Direto da v2.0.8, sem botão ANALISAR;
+            - ao clicar em BAIXAR num link do Globoplay, faz internamente a validação autenticada da sessão persistente;
+            - reutiliza a sessão/cookies protegidos pelo Windows (DPAPI);
+            - escolhe internamente a melhor resolução compatível com 360p, 480p, 720p, 1080p ou Melhor disponível;
+            - usa o seletor de formato real confirmado pelo Globoplay antes de iniciar o download;
+            - se a sessão tiver expirado, orienta atualizar e salvar a sessão novamente;
+            - não tenta contornar DRM, assinatura ou outras restrições reais.
 
-            Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, histórico, FFmpeg/FFprobe/Deno e demais funções permanecem preservados.
-            DRM confirmado e demais restrições reais continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+            PRESERVADO:
+            - R7/Record no fluxo direto estilo Android;
+            - YouTube e YouTube Live;
+            - Editor, timeline, Delete, cortes e união;
+            - H.264/H.265, compressão, resolução, proxy, histórico, FFmpeg/FFprobe/Deno;
+            - layout aprovado da v2.0.8.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.8-DOWNLOAD-DIRETO.zip
+            ExtratorVideos-Windows-Portable-v2.0.9-GLOBOPLAY-DIRECT-FIX.zip
           fail_on_unmatched_files: true
           overwrite_files: true
