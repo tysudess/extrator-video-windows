@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.6 R7 Primary Player Fix
+name: Build Windows Portable v2.0.7 R7 Android Flow
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.6-r7-primary-player-work
+      - v2.0.7-r7-android-flow-work
 
 permissions:
   contents: write
@@ -94,17 +94,37 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py range_slider.py advanced_editor.py
 
-      - name: Testar seleção do player principal R7
+      - name: Testar fluxo R7 baseado no Android
         shell: powershell
         run: |
-          python -c "import refined_layout_v206 as m; alvo='Assista à íntegra da Edição Digital do JR 24 Horas desta sexta 28'; correto='Assista à íntegra da Edição Digital do JR 24 Horas desta sexta 28'; errado='JR Trade Fundador e COO da DOJO apresenta agência culture-first'; assert m._text_similarity(alvo, correto) > m._text_similarity(alvo, errado); print('R7 primary player scoring: OK')"
+          @'
+          import refined_layout_v207 as m
+          html = '''
+          <html><body>
+          <script>var x="https://cdn.exemplo.com/video-principal.m3u8";</script>
+          <a href="https://site.exemplo.com/noticia">x</a>
+          <iframe src="https://player.exemplo.com/embed/123"></iframe>
+          </body></html>
+          '''
+          c = m._android_extract_candidates(html, 'https://noticias.r7.com/materia/')
+          assert c[0] == 'https://cdn.exemplo.com/video-principal.m3u8', c
+          assert len(c) <= 15
+          cmd = m._r7_probe_command('https://noticias.r7.com/materia/', '', '')
+          assert '--force-ipv4' in cmd
+          assert '--retries' in cmd and cmd[cmd.index('--retries') + 1] == '10'
+          assert '--fragment-retries' in cmd and cmd[cmd.index('--fragment-retries') + 1] == '10'
+          assert '--socket-timeout' in cmd and cmd[cmd.index('--socket-timeout') + 1] == '30'
+          assert m.OriginalDownloadWorker.__name__ == 'DownloadWorker'
+          assert m.core.DownloadWorker.__name__ == 'R7AndroidDownloadWorker'
+          print('R7 Android Flow: OK')
+          '@ | python -
 
-      - name: Gerar aplicativo v2.0.6 R7 Primary Player Fix
+      - name: Gerar aplicativo v2.0.7 R7 Android Flow
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v206.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v207.py
 
       - name: Montar portable
         shell: powershell
@@ -118,35 +138,36 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.6-R7-PRIMARY-PLAYER-FIX.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.7-R7-ANDROID-FLOW.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.6
+          tag_name: v2.0.7
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.6 - R7 Primary Player Fix
+          name: Extrator de Vídeos Windows v2.0.7 - R7 Android Flow
           body: |
-            Extrator de Vídeos Windows Portable v2.0.6 - R7 Primary Player Fix.
+            Extrator de Vídeos Windows Portable v2.0.7 - R7 Android Flow.
 
-            Parte exclusivamente da v2.0.5 - R7 HLS/TS FIX, preservando layout, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, YouTube, Live DVR, Globoplay, sessão persistente e qualidades reais.
+            Esta versão parte da v2.0.6, mas remove do caminho ativo do R7 a dependência do player-api.r7.com e do player.r7.com/video/i/ID que estavam causando vídeo relacionado incorreto e HTTP 404.
 
-            CORREÇÃO R7:
-            - o HTML do R7 pode conter vários vídeos relacionados, playlists e cards;
-            - a v2.0.5 podia encontrar um HLS válido de outro vídeo da página e baixá-lo;
-            - a v2.0.6 primeiro extrai o título da matéria e identifica os IDs de player presentes;
-            - consulta os metadados dos players e escolhe o ID mais compatível com o título/contexto da matéria;
-            - HLS/MP4 passa a ser resolvido somente a partir desse player principal;
-            - não cai silenciosamente para outro vídeo relacionado se o player principal falhar;
-            - suporte HLS/MPEG-TS e limpeza de URL duplicada da v2.0.5 permanecem preservados.
+            O fluxo R7 passa a reproduzir o comportamento comprovado da Android v1.9.17:
+            - tenta primeiro o link original da matéria diretamente no yt-dlp;
+            - usa --force-ipv4, 10 retries, 10 fragment-retries e socket-timeout 30;
+            - se a tentativa principal falhar, baixa o HTML da matéria;
+            - extrai até 15 candidatos na mesma ordem do Android;
+            - testa cada candidato com Referer apontando para a matéria original;
+            - ANALISAR segue a mesma ordem e mantém analyzed_input_url vinculado ao link original;
+            - o candidato confirmado na análise é priorizado no download;
+            - URL R7 duplicada continua sendo corrigida automaticamente.
 
-            Caso de referência: a matéria "Assista à íntegra da Edição Digital do JR 24 Horas desta sexta (28)" não deve mais baixar conteúdo JR Trade relacionado.
-            DRM, login e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
+            Globoplay, sessão persistente, YouTube, Live DVR, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão e proxy permanecem preservados.
+            DRM e demais restrições continuam sendo respeitados; o aplicativo não tenta contornar mecanismos de proteção.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.6-R7-PRIMARY-PLAYER-FIX.zip
+            ExtratorVideos-Windows-Portable-v2.0.7-R7-ANDROID-FLOW.zip
           fail_on_unmatched_files: true
           overwrite_files: true
