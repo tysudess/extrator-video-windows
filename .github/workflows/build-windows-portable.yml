@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0 Evolucao Consolidada
+name: Build Windows Portable v2.0.1 Globoplay Login
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0
+      - v2.0.1-globoplay-login
 
 permissions:
   contents: write
@@ -94,12 +94,12 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "ExtratorVideos-Icone.ico")) { throw "Icone do aplicativo ausente" }
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py range_slider.py advanced_editor.py
 
-      - name: Gerar aplicativo v2.0 preservando a base v1.9.22
+      - name: Gerar aplicativo v2.0.1 Globoplay Login
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v2.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v201.py
 
       - name: Montar portable
         shell: powershell
@@ -113,29 +113,28 @@ jobs:
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffmpeg.exe")) { throw "ffmpeg.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/ffprobe.exe")) { throw "ffprobe.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/deno.exe")) { throw "deno.exe ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0-EVOLUCAO-CONSOLIDADA.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.1-GLOBOPLAY-LOGIN.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0
+          tag_name: v2.0.1
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0 - Evolução Consolidada
+          name: Extrator de Vídeos Windows v2.0.1 - Globoplay Login
           body: |
-            Extrator de Vídeos Windows Portable v2.0 - Evolução Consolidada.
+            Extrator de Vídeos Windows Portable v2.0.1 - Globoplay Login.
 
-            A v2.0 parte exclusivamente da base aprovada Windows v1.9.22 - QUALIDADES REAIS + GLOBOPLAY.
-            Nenhuma função ou layout aprovado foi removido ou redesenhado nesta mudança de versão.
+            Parte exclusivamente da v2.0 - EVOLUÇÃO CONSOLIDADA, preservando layout, Editor, timeline, Delete, cortes, união, H.264/H.265, compressão, proxy, YouTube, Live DVR e qualidades reais.
 
-            Mantidos: Editor integrado, timeline com arrastar e soltar diretamente pelo mouse, Delete no teclado, cortes em segundos/milissegundos, união interna, H.264/H.265, compressão inteligente, resolução, proxy, pré-visualização, histórico, YouTube, Live do início até o momento atual, Globoplay quando disponível e ANALISAR mostrando somente qualidades realmente disponíveis.
+            NOVO: em Configurações existe o cartão Globoplay - sessão de login, com o botão Entrar / atualizar sessão Globoplay.
+            O botão abre o Globoplay no navegador padrão para o usuário fazer login normalmente. Depois disso, ao ANALISAR ou baixar links do Globoplay, o aplicativo reutiliza a sessão do navegador somente para esses links.
+            A senha não é salva no aplicativo.
 
-            DRM/login/assinatura/restrições continuam sendo somente detectados e informados; o aplicativo não tenta contornar DRM.
-
-            O LEIA-ME incluído no pacote contém o histórico consolidado da evolução do projeto até a v2.0.
+            Conteúdo com DRM, assinatura sem acesso, bloqueio regional ou outras restrições continua sendo somente identificado; o aplicativo não tenta contornar DRM ou mecanismos de proteção.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0-EVOLUCAO-CONSOLIDADA.zip
+            ExtratorVideos-Windows-Portable-v2.0.1-GLOBOPLAY-LOGIN.zip
           fail_on_unmatched_files: true
           overwrite_files: true
