@@ -78,7 +78,7 @@ def _extract_stream_urls(text, base_url):
     seen = set()
 
     def add(value):
-        value = v203._unescape_url(value).strip().strip('"\'')
+        value = v203._unescape_url(value).strip().strip('"').strip("'")
         if value.startswith('//'):
             value = 'https:' + value
         try:
