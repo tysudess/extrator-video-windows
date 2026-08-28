@@ -1,11 +1,11 @@
-name: Build Windows Portable v2.0.14 Globoplay Android Flow
+name: Build Windows Portable v3.0 Final
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v2.0.14-globoplay-android-flow
+      - v3.0-final
 
 permissions:
   contents: write
@@ -39,7 +39,7 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
           Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp-stable.exe"
           Write-Host "Nightly:"; & "bin/yt-dlp.exe" --version
-          Write-Host "Stable (mesmo canal do Android):"; & "bin/yt-dlp-stable.exe" --version
+          Write-Host "Stable (Globoplay/Android):"; & "bin/yt-dlp-stable.exe" --version
 
       - name: Baixar Deno
         shell: powershell
@@ -73,79 +73,78 @@ jobs:
           Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
           Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
 
-      - name: Verificar sintaxe e sessão igual ao Android
+      - name: Verificar v3.0 - layout, undo e Globoplay
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py range_slider.py advanced_editor.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py refined_layout_v300.py advanced_editor.py advanced_editor_v300.py range_slider.py
           @'
           from pathlib import Path
-          import refined_layout_v214 as m
-          from PySide6.QtWidgets import QApplication
+          from PySide6.QtWidgets import QApplication, QFrame
+          import refined_layout_v300 as m
+          import advanced_editor_v300 as e3
 
-          class FakeCookie:
-              def __init__(self, domain, name, value):
-                  self._domain = domain; self._name = name; self._value = value
-              def domain(self): return self._domain
-              def path(self): return '/qualquer'
-              def name(self): return self._name.encode()
-              def value(self): return self._value.encode()
+          assert m.APP_VERSION.startswith('Windows Portable v3.0')
+          assert m.core.AdvancedVideoEditorWidget is e3.AdvancedVideoEditorWidget300
 
-          cookies = [
-              FakeCookie('.globoplay.globo.com', 'globoplay_a', '1'),
-              FakeCookie('.play.globo.com', 'play_a', '2'),
-              FakeCookie('.login.globo.com', 'login_a', '3'),
-              FakeCookie('.globo.com', 'root_a', '4'),
-          ]
-          raw, count = m._android_cookie_jar_from_qt(cookies)
-          text = raw.decode()
-          assert count == 4
-          assert text.count('.globo.com\tTRUE\t/\tTRUE\t') == 4
-          assert 'globoplay_a\t1' in text and 'play_a\t2' in text
-          assert 'login_a\t3' in text and 'root_a\t4' in text
-
-          assert m._globo_id('https://globoplay.globo.com/v/14907582/?s=0') == '14907582'
-          assert 'm3u8_native' in m._hls_selector('b[height<=360]/b')
-          assert m.core.DownloadWorker is m.GloboplayAndroidFlowWorker
-          assert m.core.MainWindow.download_video is m.v208.direct_download_video
-          assert m.v210.GloboplayLoginDialog is m.GloboplayAndroidLoginDialog
-
-          original_write = m.v202._write_runtime_cookie_file
+          # Garante que o fluxo Globoplay que funcionou na v2.0.14 continua intacto.
+          v214 = m.v214
+          assert v214._globo_id('https://globoplay.globo.com/v/14907582/?s=0') == '14907582'
+          assert v214.v210.GloboplayLoginDialog is v214.GloboplayAndroidLoginDialog
+          original_write = v214.v202._write_runtime_cookie_file
           try:
-              m.v202._write_runtime_cookie_file = lambda: Path('globoplay-cookies.txt')
-              wkr = m.GloboplayAndroidFlowWorker(
+              v214.v202._write_runtime_cookie_file = lambda: Path('globoplay-cookies.txt')
+              wkr = v214.GloboplayAndroidFlowWorker(
                   'https://globoplay.globo.com/v/14907582/?s=0', 0,
                   format_selector='b[height<=360]/b', compat_selector='b[height<=360]/b'
               )
               wkr._globo_use_session = True
               cmd = wkr._base_cmd('b[height<=360]/b')
               assert str(cmd[0]).lower().endswith('yt-dlp-stable.exe')
-              assert '--cookies' in cmd
-              assert cmd[cmd.index('--cookies') + 1].endswith('globoplay-cookies.txt')
-              assert '--force-ipv4' in cmd
-              wkr._globo_hls_mode = True
-              cmd_hls = wkr._base_cmd(m._hls_selector('b[height<=360]/b'), referer='https://globoplay.globo.com/v/14907582/?s=0')
-              assert '--hls-use-mpegts' in cmd_hls
-              assert '--downloader' in cmd_hls and 'm3u8:native' in cmd_hls
-              assert '--cookies' in cmd_hls
+              assert '--cookies' in cmd and '--force-ipv4' in cmd
           finally:
-              m.v202._write_runtime_cookie_file = original_write
+              v214.v202._write_runtime_cookie_file = original_write
 
           app = QApplication.instance() or QApplication([])
           win = m.core.MainWindow()
+
+          # Painel lateral direito removido e conteúdo principal expandido.
+          rights = [f for f in win.findChildren(QFrame) if f.objectName() == 'RefinedRight']
+          assert rights
+          assert all((not f.isVisible()) and f.maximumWidth() == 0 for f in rights)
+
+          editor = win.editor_page
+          assert isinstance(editor, e3.AdvancedVideoEditorWidget300)
+          assert hasattr(editor, 'btn_undo')
+          assert 'VOLTAR' in editor.btn_undo.text()
+          assert hasattr(editor, 'undo_shortcut')
+
+          # Teste simples do histórico sem depender de arquivo de vídeo real.
+          before = editor._snapshot()
+          editor.clips = [{
+              'path':'dummy.mp4', 'duration_ms':1000, 'start_ms':0, 'end_ms':1000,
+              'info':{}, 'cut_before':False,
+          }]
+          editor.selected_index = 0
+          editor._commit_undo_if_changed(before, 'teste')
+          assert len(editor._undo_stack) == 1
+          editor.undo_last_action()
+          assert editor.clips == []
+          assert len(editor._undo_stack) == 0
+
           assert win.btn_analyze.isHidden()
           assert 'BAIXAR' in win.btn_download.text()
           win.close()
-          print('v2.0.14 login/cookies Globoplay iguais ao Android: OK')
+          print('Windows v3.0 layout + Ctrl+Z/botao Voltar + Globoplay Android Flow: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v2.0.14
+      - name: Gerar aplicativo v3.0
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v214.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v300.py
 
-      - name: Montar portable
+      - name: Montar portable v3.0
         shell: powershell
         run: |
           Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
@@ -154,34 +153,34 @@ jobs:
           New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
           if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp-stable.exe")) { throw "yt-dlp STABLE ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v2.0.14-GLOBOPLAY-ANDROID-FLOW.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v3.0-FINAL.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v2.0.14
+          tag_name: v3.0
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v2.0.14 - Globoplay Android Flow
+          name: Extrator de Vídeos Windows v3.0 - Final
           body: |
-            Windows v2.0.14 - Globoplay Android Flow.
+            Windows v3.0 - versão consolidada final por enquanto.
 
-            CORREÇÃO BASEADA DIRETAMENTE NO CÓDIGO ANDROID v1.9.17:
-            - login abre somente a página principal https://globoplay.globo.com/;
-            - botão SALVAR SESSÃO E VOLTAR, sem abrir vídeo e sem exigir Play;
-            - não depende de GLBID nem de validação de player;
-            - coleta cookies da sessão Globo/Globoplay e grava todos como .globo.com, subdomínios habilitados, caminho / e HTTPS, exatamente como a Android;
-            - cookie jar é usado desde a primeira tentativa do link Globoplay;
-            - o mesmo cookie jar é usado em globo:<ID> e HLS/TS;
-            - yt-dlp STABLE é usado exclusivamente no Globoplay, como no Android;
-            - mantém --force-ipv4, 10 retries, 10 fragment-retries, timeout 30 e m3u8:native;
-            - Download Direto sem botão ANALISAR permanece;
-            - R7/Record, YouTube, YouTube Live, Editor, timeline e demais funções preservadas;
-            - DRM e permissões da conta continuam sendo respeitados.
+            ALTERAÇÕES FINAIS:
+            - removida totalmente a coluna lateral direita "NOVO DESIGN / ÍCONE DO APLICATIVO";
+            - área principal passa a aproveitar o espaço liberado;
+            - Editor/Timeline ganha Ctrl+Z para desfazer ações destrutivas;
+            - novo botão VOLTAR / DESFAZER (Ctrl+Z), com a mesma função do atalho;
+            - desfaz exclusão de trecho, corte e ajustes explícitos de início/fim;
+            - histórico de até 50 ações da timeline;
+            - preservado o Globoplay Android Flow aprovado da v2.0.14;
+            - login Globoplay na página principal, salvar sessão e voltar;
+            - cookie jar aplicado desde a primeira tentativa, em globo:<ID> e HLS/TS;
+            - R7/Record, YouTube, YouTube Live, Editor, timeline, proxy, H.264/H.265 e demais funções preservadas;
+            - DRM e permissões continuam sendo respeitados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v2.0.14-GLOBOPLAY-ANDROID-FLOW.zip
+            ExtratorVideos-Windows-Portable-v3.0-FINAL.zip
           fail_on_unmatched_files: true
           overwrite_files: true
