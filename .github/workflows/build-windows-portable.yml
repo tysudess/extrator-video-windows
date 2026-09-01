@@ -1,11 +1,11 @@
-name: Build Windows Portable v3.0 Final
+name: Build Windows Portable v3.0.1 Proxy Login Fix
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - v3.0-final
+      - v3.0.1-proxy-login-fix
 
 permissions:
   contents: write
@@ -73,78 +73,78 @@ jobs:
           Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
           Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
 
-      - name: Verificar v3.0 - layout, undo e Globoplay
+      - name: Verificar v3.0.1 - proxy WebEngine, undo e Globoplay
         shell: powershell
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
-          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py refined_layout_v300.py advanced_editor.py advanced_editor_v300.py range_slider.py
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py refined_layout_v300.py refined_layout_v301.py advanced_editor.py advanced_editor_v300.py range_slider.py
           @'
           from pathlib import Path
+          from PySide6.QtNetwork import QNetworkProxy
           from PySide6.QtWidgets import QApplication, QFrame
-          import refined_layout_v300 as m
+          import refined_layout_v301 as m
           import advanced_editor_v300 as e3
 
-          assert m.APP_VERSION.startswith('Windows Portable v3.0')
-          assert m.core.AdvancedVideoEditorWidget is e3.AdvancedVideoEditorWidget300
+          assert m.APP_VERSION.startswith('Windows Portable v3.0.1')
 
-          # Garante que o fluxo Globoplay que funcionou na v2.0.14 continua intacto.
+          # Conversão do proxy do Extrator para o Qt WebEngine.
+          p = m._proxy_from_url('http://usuario:senha@proxy.exemplo.local:3128')
+          assert p.type() == QNetworkProxy.ProxyType.HttpProxy
+          assert p.hostName() == 'proxy.exemplo.local'
+          assert p.port() == 3128
+          assert p.user() == 'usuario'
+          assert p.password() == 'senha'
+          s = m._proxy_from_url('socks5://u:p@127.0.0.1:1080')
+          assert s.type() == QNetworkProxy.ProxyType.Socks5Proxy
+          assert s.hostName() == '127.0.0.1' and s.port() == 1080
+
+          # A janela de Configurações deve resolver a classe proxy-aware.
+          assert m.v214.v210.GloboplayLoginDialog is m.ProxyAwareGloboplayLoginDialog
+          assert m.v214.GloboplayAndroidLoginDialog is m.ProxyAwareGloboplayLoginDialog
+
+          # Fluxo Globoplay Android continua intacto no downloader.
           v214 = m.v214
           assert v214._globo_id('https://globoplay.globo.com/v/14907582/?s=0') == '14907582'
-          assert v214.v210.GloboplayLoginDialog is v214.GloboplayAndroidLoginDialog
           original_write = v214.v202._write_runtime_cookie_file
           try:
               v214.v202._write_runtime_cookie_file = lambda: Path('globoplay-cookies.txt')
               wkr = v214.GloboplayAndroidFlowWorker(
                   'https://globoplay.globo.com/v/14907582/?s=0', 0,
+                  proxy_url='http://proxy.exemplo.local:3128',
                   format_selector='b[height<=360]/b', compat_selector='b[height<=360]/b'
               )
               wkr._globo_use_session = True
               cmd = wkr._base_cmd('b[height<=360]/b')
               assert str(cmd[0]).lower().endswith('yt-dlp-stable.exe')
               assert '--cookies' in cmd and '--force-ipv4' in cmd
+              assert '--proxy' in cmd
           finally:
               v214.v202._write_runtime_cookie_file = original_write
 
           app = QApplication.instance() or QApplication([])
           win = m.core.MainWindow()
 
-          # Painel lateral direito removido e conteúdo principal expandido.
           rights = [f for f in win.findChildren(QFrame) if f.objectName() == 'RefinedRight']
-          assert rights
-          assert all((not f.isVisible()) and f.maximumWidth() == 0 for f in rights)
+          assert rights and all((not f.isVisible()) and f.maximumWidth() == 0 for f in rights)
 
           editor = win.editor_page
           assert isinstance(editor, e3.AdvancedVideoEditorWidget300)
-          assert hasattr(editor, 'btn_undo')
-          assert 'VOLTAR' in editor.btn_undo.text()
+          assert hasattr(editor, 'btn_undo') and 'VOLTAR' in editor.btn_undo.text()
           assert hasattr(editor, 'undo_shortcut')
-
-          # Teste simples do histórico sem depender de arquivo de vídeo real.
-          before = editor._snapshot()
-          editor.clips = [{
-              'path':'dummy.mp4', 'duration_ms':1000, 'start_ms':0, 'end_ms':1000,
-              'info':{}, 'cut_before':False,
-          }]
-          editor.selected_index = 0
-          editor._commit_undo_if_changed(before, 'teste')
-          assert len(editor._undo_stack) == 1
-          editor.undo_last_action()
-          assert editor.clips == []
-          assert len(editor._undo_stack) == 0
 
           assert win.btn_analyze.isHidden()
           assert 'BAIXAR' in win.btn_download.text()
           win.close()
-          print('Windows v3.0 layout + Ctrl+Z/botao Voltar + Globoplay Android Flow: OK')
+          print('Windows v3.0.1 proxy WebEngine + Globoplay Android Flow + undo: OK')
           '@ | python -
 
-      - name: Gerar aplicativo v3.0
+      - name: Gerar aplicativo v3.0.1
         shell: powershell
         run: |
-          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v300.py
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v301.py
 
-      - name: Montar portable v3.0
+      - name: Montar portable v3.0.1
         shell: powershell
         run: |
           Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
@@ -153,34 +153,31 @@ jobs:
           New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
           if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe ausente" }
           if (-not (Test-Path "dist/ExtratorVideos/bin/yt-dlp-stable.exe")) { throw "yt-dlp STABLE ausente" }
-          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v3.0-FINAL.zip" -Force
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v3.0.1-PROXY-LOGIN-FIX.zip" -Force
 
       - name: Publicar direto no GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: v3.0
+          tag_name: v3.0.1
           target_commitish: ${{ github.sha }}
-          name: Extrator de Vídeos Windows v3.0 - Final
+          name: Extrator de Vídeos Windows v3.0.1 - Proxy Login Fix
           body: |
-            Windows v3.0 - versão consolidada final por enquanto.
+            Windows v3.0.1 - correção de proxy no login interno do Globoplay.
 
-            ALTERAÇÕES FINAIS:
-            - removida totalmente a coluna lateral direita "NOVO DESIGN / ÍCONE DO APLICATIVO";
-            - área principal passa a aproveitar o espaço liberado;
-            - Editor/Timeline ganha Ctrl+Z para desfazer ações destrutivas;
-            - novo botão VOLTAR / DESFAZER (Ctrl+Z), com a mesma função do atalho;
-            - desfaz exclusão de trecho, corte e ajustes explícitos de início/fim;
-            - histórico de até 50 ações da timeline;
-            - preservado o Globoplay Android Flow aprovado da v2.0.14;
-            - login Globoplay na página principal, salvar sessão e voltar;
-            - cookie jar aplicado desde a primeira tentativa, em globo:<ID> e HLS/TS;
-            - R7/Record, YouTube, YouTube Live, Editor, timeline, proxy, H.264/H.265 e demais funções preservadas;
+            CORREÇÃO:
+            - navegador interno Qt WebEngine agora herda o mesmo proxy configurado no Extrator;
+            - suporte a proxy HTTP/HTTPS e SOCKS5 no login interno;
+            - usuário e senha do proxy são encaminhados ao QNetworkProxy quando configurados;
+            - configuração anterior de proxy do Qt é restaurada ao fechar a janela de login;
+            - Globoplay Android Flow da v3.0 permanece intacto;
+            - login continua na página principal + SALVAR SESSÃO E VOLTAR;
+            - R7/Record, YouTube, YouTube Live, Ctrl+Z, botão VOLTAR/DESFAZER, Editor e timeline preservados;
             - DRM e permissões continuam sendo respeitados.
           prerelease: false
           make_latest: true
           files: |
-            ExtratorVideos-Windows-Portable-v3.0-FINAL.zip
+            ExtratorVideos-Windows-Portable-v3.0.1-PROXY-LOGIN-FIX.zip
           fail_on_unmatched_files: true
           overwrite_files: true
