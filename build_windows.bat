@@ -6,7 +6,7 @@ py -3.12 -m pip install -r requirements.txt
 if errorlevel 1 goto :erro
 
 if not exist bin mkdir bin
-echo O build v3.0 usa bin\yt-dlp.exe e bin\yt-dlp-stable.exe.
+echo O build v3.0.1 usa bin\yt-dlp.exe e bin\yt-dlp-stable.exe.
 if not exist bin\yt-dlp.exe goto :faltou
 if not exist bin\yt-dlp-stable.exe goto :faltou
 if not exist bin\ffmpeg.exe goto :faltou
@@ -14,17 +14,17 @@ if not exist bin\ffprobe.exe goto :faltou
 if not exist bin\deno.exe goto :faltou
 if not exist ExtratorVideos-Icone.ico goto :icone
 
-py -3.12 -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py refined_layout_v300.py range_slider.py advanced_editor.py advanced_editor_v300.py
+py -3.12 -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py refined_layout_v300.py refined_layout_v301.py range_slider.py advanced_editor.py advanced_editor_v300.py
 if errorlevel 1 goto :erro
 
-py -3.12 -m PyInstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon ExtratorVideos-Icone.ico refined_layout_v300.py
+py -3.12 -m PyInstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon ExtratorVideos-Icone.ico refined_layout_v301.py
 if errorlevel 1 goto :erro
 
 xcopy /E /I /Y bin dist\ExtratorVideos\bin >nul
 copy /Y LEIA-ME.txt dist\ExtratorVideos\LEIA-ME.txt >nul
 copy /Y ExtratorVideos-Icone.ico dist\ExtratorVideos\ExtratorVideos-Icone.ico >nul
 
-echo Build v3.0 concluido em dist\ExtratorVideos
+echo Build v3.0.1 concluido em dist\ExtratorVideos
 pause
 exit /b 0
 
