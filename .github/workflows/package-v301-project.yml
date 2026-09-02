@@ -1,0 +1,43 @@
+name: Package v3.0.1 Complete Project
+
+on:
+  push:
+    branches:
+      - package-v301-project
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar tag v3.0.1
+        run: |
+          git rev-parse v3.0.1
+          test "$(git rev-parse v3.0.1)" = "92f031c22cf8c23c2f5dd15a1857a6df4186b97e"
+
+      - name: Gerar ZIP exato do projeto v3.0.1
+        run: |
+          git archive \
+            --format=zip \
+            --prefix=ExtratorVideos-Windows-v3.0.1-PROJETO-COMPLETO/ \
+            --output=ExtratorVideos-Windows-v3.0.1-PROJETO-COMPLETO.zip \
+            v3.0.1
+          unzip -l ExtratorVideos-Windows-v3.0.1-PROJETO-COMPLETO.zip | head -80
+          sha256sum ExtratorVideos-Windows-v3.0.1-PROJETO-COMPLETO.zip
+
+      - name: Upload do ZIP completo
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtratorVideos-Windows-v3.0.1-PROJETO-COMPLETO
+          path: ExtratorVideos-Windows-v3.0.1-PROJETO-COMPLETO.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
