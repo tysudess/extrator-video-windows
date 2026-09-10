@@ -1,0 +1,141 @@
+name: Build Monitor Headless Video Core
+
+on:
+  push:
+    branches:
+      - integration/monitor-headless
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: integration/monitor-headless
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Prepare binaries
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
+
+      - name: Download yt-dlp nightly and stable
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp-stable.exe"
+          & "bin/yt-dlp.exe" --version
+          & "bin/yt-dlp-stable.exe" --version
+
+      - name: Download Deno
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
+          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
+          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
+          & "bin/deno.exe" --version
+
+      - name: Download FFmpeg and FFprobe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $sources = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+          $ok = $false
+          foreach ($url in $sources) {
+            try {
+              Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+              if ((Get-Item "ffmpeg.zip").Length -gt 1000000) { $ok = $true; break }
+            } catch { Write-Warning $_.Exception.Message }
+          }
+          if (-not $ok) { throw "Nao foi possivel baixar FFmpeg." }
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
+          $ffmpeg = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
+          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
+
+      - name: Compile bridge and original modules
+        shell: pwsh
+        run: |
+          python -m py_compile monitor_bridge.py main.py advanced_editor.py advanced_editor_v300.py range_slider.py refined_layout_v301.py refined_layout_v300.py refined_layout_v214.py refined_layout_v213.py refined_layout_v212.py refined_layout_v211.py refined_layout_v210.py refined_layout_v209.py refined_layout_v208.py refined_layout_v207.py refined_layout_v206.py refined_layout_v205.py refined_layout_v204.py refined_layout_v203.py refined_layout_v202.py refined_layout_v201.py refined_layout_v2.py refined_layout.py modern_layout.py novo_layout.py
+
+      - name: Verify bridge state from sources
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu --no-sandbox
+        run: |
+          '{"action":"state"}' | python monitor_bridge.py | Tee-Object -FilePath state-source.jsonl
+          $raw = Get-Content state-source.jsonl -Raw
+          if ($raw -notmatch 'Windows Portable v3.0.1') { throw 'Bridge nao reportou v3.0.1.' }
+          if ($raw -notmatch '"ffmpeg": true') { throw 'FFmpeg nao detectado.' }
+
+      - name: Build headless core executable
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --console --onedir --name VideoCoreBridge --contents-directory _internal --icon "ExtratorVideos-Icone.ico" monitor_bridge.py
+
+      - name: Assemble core bundle
+        shell: pwsh
+        run: |
+          Copy-Item -Path "bin" -Destination "dist/VideoCoreBridge/bin" -Recurse -Force
+          if (Test-Path "config-proxy.json") { Copy-Item "config-proxy.json" "dist/VideoCoreBridge/config-proxy.json" -Force }
+          Copy-Item "LEIA-ME.txt" "dist/VideoCoreBridge/LEIA-ME-EXTRATOR-VIDEOS.txt" -Force
+          New-Item -ItemType Directory -Force -Path "dist/VideoCoreBridge/Videos" | Out-Null
+
+      - name: Verify packaged bridge state
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu --no-sandbox
+        run: |
+          '{"action":"state"}' | & "dist/VideoCoreBridge/VideoCoreBridge.exe" | Tee-Object -FilePath state-packaged.jsonl
+          $raw = Get-Content state-packaged.jsonl -Raw
+          if ($raw -notmatch 'Windows Portable v3.0.1') { throw 'Executavel nao reportou v3.0.1.' }
+          if ($raw -notmatch '"ffmpeg": true') { throw 'Executavel nao localizou FFmpeg.' }
+
+      - name: Verify probe action
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu --no-sandbox
+        run: |
+          & "dist/VideoCoreBridge/bin/ffmpeg.exe" -y -f lavfi -i color=c=black:s=320x180:d=1 -f lavfi -i anullsrc=r=48000:cl=stereo -shortest -c:v libx264 -c:a aac test-video.mp4
+          $req = @{ action='probe'; path=(Resolve-Path 'test-video.mp4').Path } | ConvertTo-Json -Compress
+          $req | & "dist/VideoCoreBridge/VideoCoreBridge.exe" | Tee-Object -FilePath probe.jsonl
+          $raw = Get-Content probe.jsonl -Raw
+          if ($raw -notmatch '"ok": true') { throw 'Probe do editor falhou.' }
+          if ($raw -notmatch 'duration_ms') { throw 'Probe nao retornou duracao.' }
+
+      - name: Package core ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/VideoCoreBridge/*" -DestinationPath "VideoCoreBridge-v3.0.1.zip" -Force
+
+      - name: Upload core artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-core-bridge-v3.0.1
+          path: VideoCoreBridge-v3.0.1.zip
+          retention-days: 7
