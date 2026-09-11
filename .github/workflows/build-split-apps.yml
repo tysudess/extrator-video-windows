@@ -1,0 +1,120 @@
+name: Build Split Editor + Downloader
+
+on:
+  push:
+    branches:
+      - split-editor-downloader
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar binarios
+        shell: powershell
+        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
+
+      - name: Baixar yt-dlp
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp-stable.exe"
+
+      - name: Baixar Deno
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
+          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
+          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
+
+      - name: Baixar FFmpeg e FFprobe
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $fontes = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+          $ok = $false
+          foreach ($url in $fontes) {
+            try {
+              Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+              if ((Get-Item "ffmpeg.zip").Length -gt 1000000) { $ok = $true; break }
+            } catch { Write-Warning $_.Exception.Message }
+          }
+          if (-not $ok) { throw "Nao foi possivel baixar FFmpeg." }
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
+          $ffmpeg = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
+          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
+
+      - name: Validar fontes separados
+        shell: powershell
+        run: |
+          python -m py_compile downloader_only.py editor_only.py advanced_editor.py advanced_editor_v300.py range_slider.py
+
+      - name: Gerar Downloader separado
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos-Downloader --contents-directory _internal --icon "ExtratorVideos-Icone.ico" --exclude-module advanced_editor --exclude-module advanced_editor_v300 downloader_only.py
+          Copy-Item -Path "bin" -Destination "dist/ExtratorVideos-Downloader/bin" -Recurse -Force
+          New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos-Downloader/Videos" | Out-Null
+          @"
+          EXTRATOR DE VIDEOS - DOWNLOADER v3.0.1 SPLIT
+
+          Aplicativo de download separado do Editor de Video.
+          Base: v3.0.1 Proxy Login Fix.
+          Mantem YouTube, YouTube Live, R7/Record, Globoplay Android Flow, proxy e selecao de qualidade.
+          "@ | Set-Content -Encoding UTF8 "dist/ExtratorVideos-Downloader/LEIA-ME-SPLIT.txt"
+          Compress-Archive -Path "dist/ExtratorVideos-Downloader/*" -DestinationPath "ExtratorVideos-Downloader-v3.0.1-SPLIT.zip" -Force
+
+      - name: Gerar Editor separado
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name EditorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" editor_only.py
+          New-Item -ItemType Directory -Force -Path "dist/EditorVideos/bin" | Out-Null
+          Copy-Item "bin/ffmpeg.exe" "dist/EditorVideos/bin/ffmpeg.exe" -Force
+          Copy-Item "bin/ffprobe.exe" "dist/EditorVideos/bin/ffprobe.exe" -Force
+          New-Item -ItemType Directory -Force -Path "dist/EditorVideos/Videos" | Out-Null
+          @"
+          EDITOR DE VIDEO v3.0.1 SPLIT
+
+          Editor independente extraido da v3.0.1.
+          Mantem timeline, cortes, ajustes de inicio/fim, exportacao e Ctrl+Z / Voltar-Desfazer.
+          "@ | Set-Content -Encoding UTF8 "dist/EditorVideos/LEIA-ME-SPLIT.txt"
+          Compress-Archive -Path "dist/EditorVideos/*" -DestinationPath "EditorVideos-v3.0.1-SPLIT.zip" -Force
+
+      - name: Upload Downloader ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtratorVideos-Downloader-v3.0.1-SPLIT
+          path: ExtratorVideos-Downloader-v3.0.1-SPLIT.zip
+          if-no-files-found: error
+
+      - name: Upload Editor ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: EditorVideos-v3.0.1-SPLIT
+          path: EditorVideos-v3.0.1-SPLIT.zip
+          if-no-files-found: error
