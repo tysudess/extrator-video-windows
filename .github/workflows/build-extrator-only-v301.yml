@@ -1,0 +1,166 @@
+name: Build Extrator Only Windows Portable v3.0.1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/extrator-only-v301
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias Python
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar binarios
+        shell: powershell
+        run: New-Item -ItemType Directory -Force -Path bin | Out-Null
+
+      - name: Baixar yt-dlp NIGHTLY e STABLE
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp-stable.exe"
+          & "bin/yt-dlp.exe" --version
+          & "bin/yt-dlp-stable.exe" --version
+
+      - name: Baixar Deno
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "deno.zip"
+          Expand-Archive -Path "deno.zip" -DestinationPath "deno-temp" -Force
+          Copy-Item "deno-temp/deno.exe" "bin/deno.exe" -Force
+          & "bin/deno.exe" --version
+
+      - name: Baixar FFmpeg e FFprobe
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $fontes = @(
+            "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n9.0-latest-win64-gpl-9.0.zip",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          )
+          $ok = $false
+          foreach ($url in $fontes) {
+            try {
+              Invoke-WebRequest -Uri $url -OutFile "ffmpeg.zip" -TimeoutSec 180
+              if ((Get-Item "ffmpeg.zip").Length -gt 1000000) { $ok = $true; break }
+            } catch { Write-Warning $_.Exception.Message }
+          }
+          if (-not $ok) { throw "Nao foi possivel baixar FFmpeg." }
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-temp" -Force
+          $ffmpeg = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $ffprobe = Get-ChildItem "ffmpeg-temp" -Recurse -Filter "ffprobe.exe" | Select-Object -First 1
+          if (-not $ffmpeg -or -not $ffprobe) { throw "FFmpeg/FFprobe nao encontrados no pacote." }
+          Copy-Item $ffmpeg.FullName "bin/ffmpeg.exe" -Force
+          Copy-Item $ffprobe.FullName "bin/ffprobe.exe" -Force
+
+      - name: Compilar modulos Python
+        shell: powershell
+        run: |
+          python -m py_compile main.py novo_layout.py modern_layout.py refined_layout.py refined_layout_v2.py refined_layout_v201.py refined_layout_v202.py refined_layout_v203.py refined_layout_v204.py refined_layout_v205.py refined_layout_v206.py refined_layout_v207.py refined_layout_v208.py refined_layout_v209.py refined_layout_v210.py refined_layout_v211.py refined_layout_v212.py refined_layout_v213.py refined_layout_v214.py refined_layout_v301.py range_slider.py
+
+      - name: Testes de fumaca - Extrator Only v3.0.1
+        shell: powershell
+        run: |
+          $env:QT_QPA_PLATFORM = 'offscreen'
+          $env:QTWEBENGINE_CHROMIUM_FLAGS = '--disable-gpu --no-sandbox'
+          @'
+          from pathlib import Path
+          from PySide6.QtNetwork import QNetworkProxy
+          from PySide6.QtWidgets import QApplication, QFrame
+          import refined_layout_v301 as m
+
+          assert m.EXTRACTOR_ONLY is True
+          assert m.APP_VERSION.startswith('Windows Portable v3.0.1')
+
+          labels = [item[0] for item in m.v214.v208.DIRECT_QUALITIES]
+          assert labels == ['360p', '480p', '720p HD', '1080p Full HD', 'Melhor disponível']
+
+          p = m._proxy_from_url('http://usuario:senha@proxy.exemplo.local:3128')
+          assert p.type() == QNetworkProxy.ProxyType.HttpProxy
+          assert p.hostName() == 'proxy.exemplo.local' and p.port() == 3128
+          assert p.user() == 'usuario' and p.password() == 'senha'
+
+          s = m._proxy_from_url('socks5://u:p@127.0.0.1:1080')
+          assert s.type() == QNetworkProxy.ProxyType.Socks5Proxy
+          assert s.hostName() == '127.0.0.1' and s.port() == 1080
+
+          assert m.v214.v210.GloboplayLoginDialog is m.ProxyAwareGloboplayLoginDialog
+          assert m.v214.GloboplayAndroidLoginDialog is m.ProxyAwareGloboplayLoginDialog
+
+          original_write = m.v214.v202._write_runtime_cookie_file
+          try:
+              m.v214.v202._write_runtime_cookie_file = lambda: Path('globoplay-cookies.txt')
+              wkr = m.v214.GloboplayAndroidFlowWorker(
+                  'https://globoplay.globo.com/v/14907582/?s=0', 0,
+                  proxy_url='http://proxy.exemplo.local:3128',
+                  format_selector='b[height<=360]/b', compat_selector='b[height<=360]/b'
+              )
+              wkr._globo_use_session = True
+              cmd = wkr._base_cmd('b[height<=360]/b')
+              assert str(cmd[0]).lower().endswith('yt-dlp-stable.exe')
+              assert '--cookies' in cmd and '--force-ipv4' in cmd and '--proxy' in cmd
+              assert '--ignore-config' in cmd and '--no-mtime' in cmd
+          finally:
+              m.v214.v202._write_runtime_cookie_file = original_write
+
+          app = QApplication.instance() or QApplication([])
+          win = m.core.MainWindow()
+
+          rights = [f for f in win.findChildren(QFrame) if f.objectName() == 'RefinedRight']
+          assert rights and all(f.maximumWidth() == 0 for f in rights)
+          assert win.ref_nav['editor'].isHidden() and not win.ref_nav['editor'].isEnabled()
+          assert win.ref_stack.count() == 3
+          assert win.btn_analyze.isHidden()
+          assert win.url_edit.placeholderText() == 'https://...'
+          assert win.direct_format_info.text() == 'Formato de saída: MP4'
+          assert [win.direct_quality_combo.itemText(i) for i in range(win.direct_quality_combo.count())] == labels
+          assert 'BAIXAR VÍDEO' in win.btn_download.text()
+
+          win.close()
+          print('Extrator Only v3.0.1: smoke tests OK')
+          '@ | python -
+
+      - name: Gerar aplicativo
+        shell: powershell
+        run: |
+          pyinstaller --noconfirm --clean --windowed --onedir --name ExtratorVideos --contents-directory _internal --icon "ExtratorVideos-Icone.ico" refined_layout_v301.py
+
+      - name: Montar ZIP portable
+        shell: powershell
+        run: |
+          Copy-Item -Path "bin" -Destination "dist/ExtratorVideos/bin" -Recurse -Force
+          Copy-Item "LEIA-ME.txt" "dist/ExtratorVideos/LEIA-ME.txt" -Force
+          Copy-Item "ExtratorVideos-Icone.ico" "dist/ExtratorVideos/ExtratorVideos-Icone.ico" -Force
+          New-Item -ItemType Directory -Force -Path "dist/ExtratorVideos/Videos" | Out-Null
+          if (-not (Test-Path "dist/ExtratorVideos/ExtratorVideos.exe")) { throw "ExtratorVideos.exe ausente" }
+          foreach ($file in @('yt-dlp.exe','yt-dlp-stable.exe','ffmpeg.exe','ffprobe.exe','deno.exe')) {
+            if (-not (Test-Path "dist/ExtratorVideos/bin/$file")) { throw "bin/$file ausente" }
+          }
+          Compress-Archive -Path "dist/ExtratorVideos/*" -DestinationPath "ExtratorVideos-Windows-Portable-v3.0.1-EXTRATOR-ONLY.zip" -Force
+
+      - name: Publicar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtratorVideos-Windows-Portable-v3.0.1-EXTRATOR-ONLY
+          path: ExtratorVideos-Windows-Portable-v3.0.1-EXTRATOR-ONLY.zip
+          if-no-files-found: error
